@@ -29,6 +29,9 @@ export const getWalrusClient = async () => {
         },
       },
     });
+    console.log("[Walrus] WalrusClient instantiated", {
+      uploadRelayHost: "https://upload-relay.testnet.walrus.space",
+    });
   }
   return _walrusClient;
 };
@@ -261,6 +264,22 @@ export async function getWalrusBlob(blobId: string): Promise<Uint8Array> {
 }
 
 /**
+ * Download a Walrus blob and return a browser-friendly Blob object
+ */
+export async function downloadWalrusFile(
+  blobId: string,
+  fileName?: string
+): Promise<{ blob: Blob; fileName: string }> {
+  console.log("[Walrus] Downloading blob", { blobId });
+  const data = await getWalrusBlob(blobId);
+  const blob = new Blob([data]);
+  return {
+    blob,
+    fileName: fileName || `${blobId}.bin`,
+  };
+}
+
+/**
  * Get the blobObjectId (Sui object ID) for a blob given its blobId
  * This queries the Sui blockchain to find the blob metadata object
  */
@@ -357,6 +376,13 @@ export function getWalrusGatewayUrl(blobId: string): string {
  */
 export function getBlobUrl(blobId: string): string {
   return `https://aggregator.walrus-testnet.walrus.space/v1/${blobId}`;
+}
+
+/**
+ * Gets the Walrus Scan URL for inspecting a blob on-chain
+ */
+export function getWalrusScanUrl(blobId: string): string {
+  return `https://walruscan.com/testnet/blob/${blobId}`;
 }
 
 /**

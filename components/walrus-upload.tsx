@@ -9,11 +9,17 @@ import {
   IconX,
   IconFileText,
   IconWallet,
+  IconDownload,
+  IconTrash,
+  IconExternalLink,
 } from "@tabler/icons-react";
 import {
   uploadWalrusFileWithFlow,
   getBlobUrl,
   formatFileSize,
+  downloadWalrusFile,
+  deleteWalrusBlob,
+  getWalrusScanUrl,
   type UploadWalrusFileResult,
 } from "@/utils/walrus";
 import {
@@ -47,7 +53,27 @@ export function WalrusUpload() {
     []
   );
   const [activeTab, setActiveTab] = React.useState("file");
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [currentFileName, setCurrentFileName] = React.useState<string | null>(
+    null
+  );
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const signTransactionWithWallet = React.useCallback(
+    async (tx: Transaction) => {
+      const result = await signAndExecute({ transaction: tx });
+      return { digest: result.digest };
+    },
+    [signAndExecute]
+  );
+
+  const signAndExecuteWrapper = React.useCallback(
+    async ({ transaction }: { transaction: Transaction }) => {
+      return signAndExecute({ transaction });
+    },
+    [signAndExecute]
+  );
 
   // Load upload history from localStorage on mount
   React.useEffect(() => {
@@ -130,11 +156,6 @@ export function WalrusUpload() {
       });
 
       // Helper to sign & execute transactions using connected wallet
-      const signTransactionWithWallet = async (tx: Transaction) => {
-        const result = await signAndExecute({ transaction: tx });
-        return { digest: result.digest };
-      };
-
       // Upload using Walrus SDK flow (register -> upload -> certify)
       const result = await uploadWalrusFileWithFlow(
         bytes,
@@ -148,6 +169,7 @@ export function WalrusUpload() {
       console.log("[WalrusUpload] Upload succeeded", result);
 
       setUploadResult(result);
+      setCurrentFileName(fileName);
 
       // Save to history
       const historyItem: UploadHistoryItem = {
@@ -190,9 +212,80 @@ export function WalrusUpload() {
     setTextContent("");
     setTextFileName("content.txt");
     setUploadResult(null);
+    setCurrentFileName(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleDownload = async (blobId: string, fileName?: string) => {
+    setIsDownloading(true);
+    try {
+      const { blob, fileName: resolvedFileName } = await downloadWalrusFile(
+        blobId,
+        fileName
+      );
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = resolvedFileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Download started", {
+        description: `Blob ID: ${blobId.slice(0, 16)}...`,
+      });
+    } catch (error) {
+      console.error("[WalrusUpload] Download failed", error);
+      toast.error("Download failed", {
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!currentAccount || !uploadResult) {
+      toast.error("Unable to delete blob");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteWalrusBlob(
+        uploadResult.blobId,
+        currentAccount.address,
+        signAndExecuteWrapper
+      );
+      toast.success("Blob deleted", {
+        description: `Blob ID: ${uploadResult.blobId.slice(0, 16)}...`,
+      });
+
+      const updatedHistory = uploadHistory.filter(
+        (item) => item.blobId !== uploadResult.blobId
+      );
+      setUploadHistory(updatedHistory);
+      localStorage.setItem(
+        "walrus-upload-history",
+        JSON.stringify(updatedHistory)
+      );
+      handleReset();
+    } catch (error) {
+      console.error("[WalrusUpload] Delete failed", error);
+      toast.error("Delete failed", {
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleOpenWalrusScan = (blobId: string) => {
+    window.open(getWalrusScanUrl(blobId), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -436,8 +529,35 @@ export function WalrusUpload() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
-              <Button onClick={handleReset} className="flex-1">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  handleDownload(
+                    uploadResult.blobId,
+                    currentFileName ?? undefined
+                  )
+                }
+                disabled={isDownloading}
+              >
+                <IconDownload className="mr-2 size-4" />
+                {isDownloading ? "Downloading..." : "Download"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleOpenWalrusScan(uploadResult.blobId)}
+              >
+                <IconExternalLink className="mr-2 size-4" /> Walrus Scan
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                <IconTrash className="mr-2 size-4" />
+                {isDeleting ? "Deleting..." : "Delete Blob"}
+              </Button>
+              <Button onClick={handleReset} className="flex-1 min-w-[150px]">
                 Upload Another File
               </Button>
               <Button
@@ -486,6 +606,25 @@ export function WalrusUpload() {
                     }
                   >
                     View
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      handleDownload(item.blobId, item.fileName || undefined)
+                    }
+                    disabled={isDownloading}
+                  >
+                    <IconDownload className="size-3 mr-1" />
+                    Download
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleOpenWalrusScan(item.blobId)}
+                  >
+                    <IconExternalLink className="size-3 mr-1" />
+                    Scan
                   </Button>
                 </div>
               </div>
