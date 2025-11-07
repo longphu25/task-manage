@@ -258,7 +258,8 @@ export function WalrusUpload() {
       await deleteWalrusBlob(
         uploadResult.blobId,
         currentAccount.address,
-        signAndExecuteWrapper
+        signAndExecuteWrapper,
+        uploadResult.blobObjectId
       );
       toast.success("Blob deleted", {
         description: `Blob ID: ${uploadResult.blobId.slice(0, 16)}...`,

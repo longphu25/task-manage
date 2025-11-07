@@ -44,6 +44,8 @@ export interface UploadWalrusFileResult {
   blobId: string;
   /** The size of the uploaded file in bytes */
   size: number;
+  /** The Sui object id for the blob metadata */
+  blobObjectId?: string;
 }
 
 /**
@@ -114,6 +116,7 @@ export async function uploadWalrusFileWithFlow(
     // Get the uploaded files info
     const uploadedFiles = await flow.listFiles();
     const blobId = uploadedFiles[0]?.blobId;
+    const blobObjectId = uploadedFiles[0]?.blobObject?.id?.id;
 
     if (!blobId) {
       throw new Error("Failed to get blob ID from upload result");
@@ -122,6 +125,7 @@ export async function uploadWalrusFileWithFlow(
     return {
       blobId,
       size: bytes.length,
+      blobObjectId,
     };
   } catch (error) {
     console.error("[Walrus] Upload flow failed", error);
@@ -272,7 +276,10 @@ export async function downloadWalrusFile(
 ): Promise<{ blob: Blob; fileName: string }> {
   console.log("[Walrus] Downloading blob", { blobId });
   const data = await getWalrusBlob(blobId);
-  const blob = new Blob([data]);
+  const copy = new Uint8Array(data);
+  const blob = new Blob([copy.buffer], {
+    type: "application/octet-stream",
+  });
   return {
     blob,
     fileName: fileName || `${blobId}.bin`,
@@ -324,15 +331,17 @@ export async function getBlobObjectId(
 export async function deleteWalrusBlob(
   blobId: string,
   ownerAddress: string,
-  signAndExecute: (params: { transaction: any }) => Promise<{ digest: string }>
+  signAndExecute: (params: { transaction: any }) => Promise<{ digest: string }>,
+  blobObjectId?: string
 ): Promise<void> {
   try {
     const walrusClient = await getWalrusClient();
 
     // Get the blobObjectId first
-    const blobObjectId = await getBlobObjectId(blobId, ownerAddress);
+    const resolvedBlobObjectId =
+      blobObjectId ?? (await getBlobObjectId(blobId, ownerAddress));
 
-    if (!blobObjectId) {
+    if (!resolvedBlobObjectId) {
       // Blob object not found, might have been already deleted
       return;
     }
@@ -340,7 +349,7 @@ export async function deleteWalrusBlob(
     // Use deleteBlobTransaction to create a transaction that deletes the blob
     // This will burn the blob metadata NFT and reclaim storage
     const deleteTx = await walrusClient.deleteBlobTransaction({
-      blobObjectId,
+      blobObjectId: resolvedBlobObjectId,
       owner: ownerAddress,
     });
 
