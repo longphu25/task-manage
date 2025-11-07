@@ -10,9 +10,12 @@ module task_manage::task_manage;
 
 use std::string::{Self, String};
 use sui::address;
+use sui::balance::{Self, Balance};
 use sui::clock::{Self, Clock};
+use sui::coin::{Self, Coin};
 use sui::dynamic_field as df;
 use sui::event;
+use sui::sui::SUI;
 use sui::table::{Self, Table};
 
 // ==================== Error Codes ====================
@@ -32,6 +35,12 @@ const ECannotShareWithSelf: u64 = 11;
 const ECategoryTooLong: u64 = 12;
 const ETagTooLong: u64 = 13;
 const ETooManyTags: u64 = 14;
+const ENoRewardBalance: u64 = 15;
+const ETaskAlreadyCompleted: u64 = 16;
+const EInvalidAmount: u64 = 17;
+const ENoAssignee: u64 = 18;
+const ETaskNotCompleted: u64 = 19;
+const EAlreadyApproved: u64 = 20;
 
 // ==================== Constants ====================
 
@@ -64,6 +73,11 @@ const MAX_COMMENT_LENGTH: u64 = 1000;
 
 public struct AccessControlKey has copy, drop, store {}
 public struct CommentsKey has copy, drop, store {}
+public struct RewardBalanceKey has copy, drop, store {}
+public struct DepositsKey has copy, drop, store {}
+public struct DepositorsKey has copy, drop, store {}
+public struct AssigneeKey has copy, drop, store {}
+public struct CompletionApprovedKey has copy, drop, store {}
 
 // ==================== Core Structs ====================
 
@@ -156,6 +170,29 @@ public struct CommentDeleted has copy, drop {
     comment_index: u64,
 }
 
+public struct TaskRewardDeposited has copy, drop {
+    task_id: address,
+    depositor: address,
+    amount: u64,
+}
+
+public struct TaskAssigneeSet has copy, drop {
+    task_id: address,
+    assignee: address,
+}
+
+public struct TaskCompletionApproved has copy, drop {
+    task_id: address,
+    assignee: address,
+    reward_amount: u64,
+}
+
+public struct TaskRewardRefunded has copy, drop {
+    task_id: address,
+    recipient: address,
+    amount: u64,
+}
+
 // ==================== Helper Functions ====================
 
 /// Check if user has at least the required role level
@@ -215,6 +252,26 @@ fun init_access_control(task: &mut Task, ctx: &mut TxContext) {
 fun init_comments(task: &mut Task) {
     if (!df::exists_(&task.id, CommentsKey {})) {
         df::add(&mut task.id, CommentsKey {}, vector::empty<Comment>());
+    };
+}
+
+/// Initialize reward balance for a task
+fun init_reward_balance(task: &mut Task, _ctx: &mut TxContext) {
+    if (!df::exists_(&task.id, RewardBalanceKey {})) {
+        let balance = balance::zero<SUI>();
+        df::add(&mut task.id, RewardBalanceKey {}, balance);
+    };
+}
+
+/// Initialize deposits table for a task
+fun init_deposits(task: &mut Task, ctx: &mut TxContext) {
+    if (!df::exists_(&task.id, DepositsKey {})) {
+        let deposits = table::new<address, u64>(ctx);
+        df::add(&mut task.id, DepositsKey {}, deposits);
+    };
+    if (!df::exists_(&task.id, DepositorsKey {})) {
+        let depositors = vector::empty<address>();
+        df::add(&mut task.id, DepositorsKey {}, depositors);
     };
 }
 
@@ -414,6 +471,9 @@ public fun archive_task(task: &mut Task, clock: &Clock, ctx: &mut TxContext) {
     let sender = tx_context::sender(ctx);
     assert!(has_permission(task, sender, ROLE_OWNER), EInsufficientPermission);
 
+    // Refund all deposits before archiving
+    refund_deposits(task, ctx);
+
     task.status = STATUS_ARCHIVED;
     task.updated_at = clock::timestamp_ms(clock);
 
@@ -424,7 +484,7 @@ public fun archive_task(task: &mut Task, clock: &Clock, ctx: &mut TxContext) {
 }
 
 /// Delete task (hard delete) - only owner can delete
-public fun delete_task(mut task: Task, ctx: &TxContext) {
+public fun delete_task(mut task: Task, ctx: &mut TxContext) {
     let sender = tx_context::sender(ctx);
     assert!(task.creator == sender, ENotOwner);
 
@@ -434,6 +494,9 @@ public fun delete_task(mut task: Task, ctx: &TxContext) {
         task_id,
         deleted_by: sender,
     });
+
+    // Refund all deposits before deleting
+    refund_deposits(&mut task, ctx);
 
     // Clean up dynamic fields if they exist
     if (df::exists_(&task.id, AccessControlKey {})) {
@@ -446,6 +509,18 @@ public fun delete_task(mut task: Task, ctx: &TxContext) {
 
     if (df::exists_(&task.id, CommentsKey {})) {
         let _comments: vector<Comment> = df::remove(&mut task.id, CommentsKey {});
+    };
+
+    if (df::exists_(&task.id, AssigneeKey {})) {
+        let _assignee: address = df::remove(&mut task.id, AssigneeKey {});
+    };
+
+    if (df::exists_(&task.id, CompletionApprovedKey {})) {
+        let _approved: bool = df::remove(&mut task.id, CompletionApprovedKey {});
+    };
+
+    if (df::exists_(&task.id, DepositorsKey {})) {
+        let _depositors: vector<address> = df::remove(&mut task.id, DepositorsKey {});
     };
 
     let Task {
@@ -722,6 +797,214 @@ public fun delete_comment(task: &mut Task, comment_index: u64, ctx: &mut TxConte
     });
 }
 
+// ==================== SUI Reward System ====================
+
+/// Deposit SUI reward into task (only Owner can deposit)
+public fun deposit_reward(task: &mut Task, payment: Coin<SUI>, clock: &Clock, ctx: &mut TxContext) {
+    let sender = tx_context::sender(ctx);
+    assert!(has_permission(task, sender, ROLE_OWNER), EInsufficientPermission);
+    assert!(task.status != STATUS_COMPLETED, ETaskAlreadyCompleted);
+
+    let amount = coin::value(&payment);
+    assert!(amount > 0, EInvalidAmount);
+
+    init_reward_balance(task, ctx);
+    init_deposits(task, ctx);
+
+    // Add full payment to total balance
+    let payment_balance = coin::into_balance(payment);
+    let balance = df::borrow_mut<RewardBalanceKey, Balance<SUI>>(&mut task.id, RewardBalanceKey {});
+    balance::join(balance, payment_balance);
+
+    // Track individual deposit amount (as u64)
+    let deposits = df::borrow_mut<DepositsKey, Table<address, u64>>(
+        &mut task.id,
+        DepositsKey {},
+    );
+
+    if (table::contains(deposits, sender)) {
+        // Add to existing deposit amount
+        let user_amount = table::borrow_mut(deposits, sender);
+        *user_amount = *user_amount + amount;
+    } else {
+        // Create new deposit entry
+        table::add(deposits, sender, amount);
+        // Track depositor
+        let depositors = df::borrow_mut<DepositorsKey, vector<address>>(
+            &mut task.id,
+            DepositorsKey {},
+        );
+        vector::push_back(depositors, sender);
+    };
+
+    task.updated_at = clock::timestamp_ms(clock);
+
+    event::emit(TaskRewardDeposited {
+        task_id: object::uid_to_address(&task.id),
+        depositor: sender,
+        amount,
+    });
+}
+
+/// Set assignee for task (only Owner can set)
+public fun set_assignee(task: &mut Task, assignee: address, clock: &Clock, ctx: &mut TxContext) {
+    let sender = tx_context::sender(ctx);
+    assert!(has_permission(task, sender, ROLE_OWNER), EInsufficientPermission);
+
+    if (!df::exists_(&task.id, AssigneeKey {})) {
+        df::add(&mut task.id, AssigneeKey {}, assignee);
+    } else {
+        let assignee_ref = df::borrow_mut<AssigneeKey, address>(&mut task.id, AssigneeKey {});
+        *assignee_ref = assignee;
+    };
+
+    task.updated_at = clock::timestamp_ms(clock);
+
+    event::emit(TaskAssigneeSet {
+        task_id: object::uid_to_address(&task.id),
+        assignee,
+    });
+}
+
+/// Approve completion and transfer reward to assignee (only Owner can approve)
+public fun approve_completion(task: &mut Task, ctx: &mut TxContext) {
+    let sender = tx_context::sender(ctx);
+    assert!(has_permission(task, sender, ROLE_OWNER), EInsufficientPermission);
+    assert!(task.status == STATUS_COMPLETED, ETaskNotCompleted);
+
+    assert!(df::exists_(&task.id, AssigneeKey {}), ENoAssignee);
+    let assignee = *df::borrow<AssigneeKey, address>(&task.id, AssigneeKey {});
+
+    // Check if already approved
+    if (df::exists_(&task.id, CompletionApprovedKey {})) {
+        let approved = *df::borrow<CompletionApprovedKey, bool>(&task.id, CompletionApprovedKey {});
+        assert!(!approved, EAlreadyApproved);
+    };
+
+    // Check if there's reward balance
+    assert!(df::exists_(&task.id, RewardBalanceKey {}), ENoRewardBalance);
+    let balance = df::remove<RewardBalanceKey, Balance<SUI>>(&mut task.id, RewardBalanceKey {});
+    let reward_amount = balance::value(&balance);
+
+    // Transfer reward to assignee
+    let reward_coin = coin::from_balance(balance, ctx);
+    sui::transfer::public_transfer(reward_coin, assignee);
+
+    // Mark as approved
+    if (!df::exists_(&task.id, CompletionApprovedKey {})) {
+        df::add(&mut task.id, CompletionApprovedKey {}, true);
+    } else {
+        let approved_ref = df::borrow_mut<CompletionApprovedKey, bool>(
+            &mut task.id,
+            CompletionApprovedKey {},
+        );
+        *approved_ref = true;
+    };
+
+    // Clean up deposits and depositors
+    if (df::exists_(&task.id, DepositsKey {})) {
+        let mut deposits = df::remove<DepositsKey, Table<address, u64>>(
+            &mut task.id,
+            DepositsKey {},
+        );
+        // Remove all entries to allow destroy_empty
+        let depositors = if (df::exists_(&task.id, DepositorsKey {})) {
+            df::remove<DepositorsKey, vector<address>>(&mut task.id, DepositorsKey {})
+        } else {
+            vector::empty<address>()
+        };
+        let mut i = 0;
+        let len = vector::length(&depositors);
+        while (i < len) {
+            let recipient = *vector::borrow(&depositors, i);
+            if (table::contains(&deposits, recipient)) {
+                let _amount = table::remove(&mut deposits, recipient);
+            };
+            i = i + 1;
+        };
+        table::destroy_empty(deposits);
+    };
+
+    event::emit(TaskCompletionApproved {
+        task_id: object::uid_to_address(&task.id),
+        assignee,
+        reward_amount,
+    });
+}
+
+/// Refund all deposits (internal helper)
+fun refund_deposits(task: &mut Task, ctx: &mut TxContext) {
+    if (df::exists_(&task.id, RewardBalanceKey {})) {
+        let mut balance = df::remove<RewardBalanceKey, Balance<SUI>>(
+            &mut task.id,
+            RewardBalanceKey {},
+        );
+
+        if (df::exists_(&task.id, DepositsKey {})) {
+            let mut deposits = df::remove<DepositsKey, Table<address, u64>>(
+                &mut task.id,
+                DepositsKey {},
+            );
+
+            // Get depositors list
+            let depositors = if (df::exists_(&task.id, DepositorsKey {})) {
+                df::remove<DepositorsKey, vector<address>>(&mut task.id, DepositorsKey {})
+            } else {
+                vector::empty<address>()
+            };
+
+            // Refund each deposit by splitting from total balance
+            let mut i = 0;
+            let len = vector::length(&depositors);
+            while (i < len) {
+                let recipient = *vector::borrow(&depositors, i);
+                if (table::contains(&deposits, recipient)) {
+                    let amount = table::remove(&mut deposits, recipient);
+                    let user_balance = balance::split(&mut balance, amount);
+                    let refund_coin = coin::from_balance(user_balance, ctx);
+                    sui::transfer::public_transfer(refund_coin, recipient);
+
+                    event::emit(TaskRewardRefunded {
+                        task_id: object::uid_to_address(&task.id),
+                        recipient,
+                        amount,
+                    });
+                };
+                i = i + 1;
+            };
+
+            table::destroy_empty(deposits);
+        };
+
+        // If any remaining balance (due to mismatch), refund to creator
+        let remaining = balance::value(&balance);
+        if (remaining > 0) {
+            let refund_coin = coin::from_balance(balance, ctx);
+            sui::transfer::public_transfer(refund_coin, task.creator);
+        } else {
+            balance::destroy_zero(balance);
+        };
+    };
+}
+
+/// Cancel task and refund all deposits (only Owner can cancel)
+public fun cancel_task(task: &mut Task, clock: &Clock, ctx: &mut TxContext) {
+    let sender = tx_context::sender(ctx);
+    assert!(has_permission(task, sender, ROLE_OWNER), EInsufficientPermission);
+
+    // Refund all deposits
+    refund_deposits(task, ctx);
+
+    // Reset status to TODO
+    task.status = STATUS_TODO;
+    task.updated_at = clock::timestamp_ms(clock);
+
+    event::emit(TaskUpdated {
+        task_id: object::uid_to_address(&task.id),
+        updated_by: sender,
+    });
+}
+
 // ==================== Getter Functions ====================
 
 public fun get_task_id(task: &Task): address {
@@ -814,6 +1097,39 @@ public fun has_access(task: &Task, user: address): bool {
     has_permission(task, user, ROLE_VIEWER)
 }
 
+/// Get reward balance for a task
+public fun get_reward_balance(task: &Task): u64 {
+    if (!df::exists_(&task.id, RewardBalanceKey {})) {
+        return 0
+    };
+
+    let balance = df::borrow<RewardBalanceKey, Balance<SUI>>(&task.id, RewardBalanceKey {});
+    balance::value(balance)
+}
+
+/// Get assignee for a task (returns @0x0 if no assignee)
+public fun get_assignee(task: &Task): address {
+    if (!df::exists_(&task.id, AssigneeKey {})) {
+        return @0x0
+    };
+
+    *df::borrow<AssigneeKey, address>(&task.id, AssigneeKey {})
+}
+
+/// Get deposit amount for a specific address
+public fun get_deposit_amount(task: &Task, depositor: address): u64 {
+    if (!df::exists_(&task.id, DepositsKey {})) {
+        return 0
+    };
+
+    let deposits = df::borrow<DepositsKey, Table<address, u64>>(&task.id, DepositsKey {});
+
+    if (table::contains(deposits, depositor)) {
+        *table::borrow(deposits, depositor)
+    } else {
+        0
+    }
+}
 // ==================== Constants Getters ====================
 
 public fun priority_low(): u8 { PRIORITY_LOW }
