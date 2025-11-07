@@ -143,51 +143,39 @@ export async function uploadWalrusFileWithFlow(
  */
 async function getWalrusBlobViaClient(blobId: string): Promise<Uint8Array> {
   const cleanBlobId = blobId.trim();
-  if (!cleanBlobId || cleanBlobId.length === 0) {
+  if (!cleanBlobId) {
     throw new Error("Empty blob ID provided");
   }
 
+  const walrusClient = await getWalrusClient();
+
   try {
-    const walrusClient = await getWalrusClient();
+    const blob = await walrusClient.getBlob({ blobId: cleanBlobId });
+    const files = await blob.files();
 
-    // Try getBlob + files() for quilts (WriteFilesFlow creates quilts)
-    try {
-      const blob = await walrusClient.getBlob({ blobId: cleanBlobId });
-      const files = await blob.files();
-      if (files.length === 0) {
-        throw new Error("No files found in blob");
-      }
-      // Use the first file
-      const file = files[0];
-
-      // Read the file contents using bytes() method
-      const data = await (file as any).bytes();
-      return new Uint8Array(data);
-    } catch (quiltError) {
-      // Fallback to readBlob for simple blobs
-      const data = await walrusClient.readBlob({ blobId: cleanBlobId });
-      return data;
+    if (!files.length) {
+      throw new Error("No files found in blob");
     }
+
+    const targetFile =
+      files.find((file: any) => {
+        const identifier = file.getIdentifier?.() || file.identifier;
+        return (
+          identifier === "vaults-data.json" ||
+          identifier === "vault-data.json" ||
+          identifier === "vault-data"
+        );
+      }) || files[0];
+
+    const bytes = await (targetFile as any).bytes();
+    return new Uint8Array(bytes);
   } catch (error) {
-    // Check if it's a retryable error
-    const { RetryableWalrusClientError } = await import("@mysten/walrus");
-    if (error instanceof RetryableWalrusClientError) {
-      const walrusClient = await getWalrusClient();
-      walrusClient.reset();
-      // Retry with getBlob method
-      try {
-        const blob = await walrusClient.getBlob({ blobId: cleanBlobId });
-        const files = await blob.files();
-        const file = files[0];
-        const data = await (file as any).bytes();
-        return new Uint8Array(data);
-      } catch (retryError) {
-        // Fallback to readBlob on retry
-        const data = await walrusClient.readBlob({ blobId: cleanBlobId });
-        return data;
-      }
-    }
-    throw error;
+    console.warn("[Walrus] getBlob via WalrusClient failed, trying readBlob", {
+      blobId: cleanBlobId,
+      error,
+    });
+    const data = await walrusClient.readBlob({ blobId: cleanBlobId });
+    return data;
   }
 }
 
@@ -245,13 +233,20 @@ export async function getWalrusBlob(blobId: string): Promise<Uint8Array> {
     throw new Error("Invalid blob ID: empty string");
   }
 
-  // Try SDK first (recommended), then fallback to HTTP endpoints
   try {
     return await getWalrusBlobViaClient(cleanBlobId);
   } catch (sdkError) {
+    console.warn("[Walrus] SDK download failed, falling back", {
+      blobId: cleanBlobId,
+      error: sdkError,
+    });
     try {
       return await getWalrusBlobViaAggregator(cleanBlobId);
     } catch (aggregatorError) {
+      console.warn("[Walrus] Aggregator download failed, trying gateway", {
+        blobId: cleanBlobId,
+        error: aggregatorError,
+      });
       try {
         return await getWalrusBlobViaGateway(cleanBlobId);
       } catch (gatewayError) {
@@ -276,8 +271,11 @@ export async function downloadWalrusFile(
 ): Promise<{ blob: Blob; fileName: string }> {
   console.log("[Walrus] Downloading blob", { blobId });
   const data = await getWalrusBlob(blobId);
-  const copy = new Uint8Array(data);
-  const blob = new Blob([copy.buffer], {
+  const buffer = data.buffer.slice(
+    data.byteOffset,
+    data.byteOffset + data.byteLength
+  ) as ArrayBuffer;
+  const blob = new Blob([buffer], {
     type: "application/octet-stream",
   });
   return {
