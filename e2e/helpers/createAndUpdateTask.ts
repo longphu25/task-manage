@@ -19,6 +19,9 @@ export const createAndUpdateTask =
                 tx.object(ENV.VERSION_ID),
                 tx.pure.string("Task #" + randomNum.toString().slice(2, 9)),
                 tx.pure.string("Join SuiHub bootcamp"),
+                tx.pure.string(
+                    "https://static.vecteezy.com/system/resources/previews/025/638/355/large_2x/simple-task-icon-the-icon-can-be-used-for-websites-print-templates-presentation-templates-illustrations-etc-free-vector.jpg"
+                ),
                 tx.pure(bcs.option(bcs.u64()).serialize(null)),
                 tx.pure.u8(2),
                 tx.pure.string("Study"),
