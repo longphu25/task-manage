@@ -2,9 +2,12 @@
 /// This module ensures backward compatibility and safe upgrades
 module task_manage::version;
 
+use sui::package::Publisher;
+
 // ==================== Error Codes ====================
 
 const EInvalidPackageVersion: u64 = 100;
+const EInvalidPublisher: u64 = 101;
 
 // ==================== Constants ====================
 
@@ -39,6 +42,19 @@ public fun check_is_valid(version: &Version) {
     assert!(version.version == VERSION, EInvalidPackageVersion);
 }
 
+/// Migrate the version object to the current VERSION
+/// This function should be called after package upgrade to update the shared Version object
+/// Only the package publisher can call this function
+public fun migrate(publisher: &Publisher, version: &mut Version) {
+    assert!(publisher.from_package<Version>(), EInvalidPublisher);
+    version.version = VERSION;
+}
+
+/// Get the current version value
+public fun version(version: &Version): u64 {
+    version.version
+}
+
 // ==================== Test-Only Functions ====================
 
 #[test_only]
@@ -47,3 +63,8 @@ public fun init_for_testing(ctx: &mut TxContext) {
     init(ctx);
 }
 
+#[test_only]
+/// Test-only function to set version to a specific value (for testing invalid versions)
+public fun set_version_for_testing(version: &mut Version, new_version: u64) {
+    version.version = new_version;
+}
