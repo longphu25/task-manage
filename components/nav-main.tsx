@@ -4,44 +4,43 @@ import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import {
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { CreateTask } from "./task-manager/create-task";
 import { useRouter } from "next/navigation";
 
 export function NavMain({
-    items,
+  items,
 }: {
-    items: {
-        title: string;
-        url: string;
-        icon?: Icon;
-    }[];
+  items: {
+    title: string;
+    url: string;
+    icon?: Icon;
+  }[];
 }) {
-    const router = useRouter();
+  const router = useRouter();
 
-    return (
-        <SidebarGroup>
-            <SidebarGroupContent className="flex flex-col gap-2">
-                <SidebarMenu>
-                    {items.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton
-                                tooltip={item.title}
-                                onClick={() => router.push(item.url)}
-                                className="cursor-pointer"
-                            >
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenu>
-            </SidebarGroupContent>
-        </SidebarGroup>
-    );
+  return (
+    <SidebarGroup>
+      <SidebarGroupContent className="flex flex-col gap-2">
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                tooltip={item.title}
+                onClick={() => router.push(item.url)}
+                className="cursor-pointer"
+              >
+                {item.icon && <item.icon />}
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 }
