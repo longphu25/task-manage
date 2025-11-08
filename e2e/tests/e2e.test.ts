@@ -3,7 +3,7 @@ import { parseCreatedObjectsIds } from "../helpers/parseCreatedObjectIds";
 import { suiClient } from "../suiClient";
 import { createAndUpdateTask } from "../helpers/createAndUpdateTask";
 import { getTaskInfo } from "../helpers/getTaskInfo";
-import { getTasksRegistry } from "../helpers/getTasksRegistry";
+import { getTasksRegistryWithStatus } from "../helpers/getTasksRegistry";
 
 describe("Create a Task, update Task", () => {
     let txResponse: SuiTransactionBlockResponse;
@@ -39,7 +39,7 @@ describe("Create a Task, update Task", () => {
     });
 
     test("Tasks registry", async () => {
-        const { status, ids } = await getTasksRegistry(1);
+        const { status, ids } = await getTasksRegistryWithStatus(1);
         console.log("Registry with status: ", status);
         tasksIds = ids;
         expect(ids.length).toBeGreaterThan(0);

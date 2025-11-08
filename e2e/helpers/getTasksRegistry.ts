@@ -7,7 +7,7 @@ interface TasksRegistry {
     ids: string[];
 }
 
-export const getTasksRegistry = async (
+export const getTasksRegistryWithStatus = async (
     status: number
 ): Promise<TasksRegistry> => {
     // TODO: Implement this function
@@ -17,6 +17,7 @@ export const getTasksRegistry = async (
             showContent: true,
         },
     });
+
     if (!registry.data) {
         return {
             status,
@@ -30,11 +31,19 @@ export const getTasksRegistry = async (
         }
     >;
     const fields = content.fields as {
-        tasks_by_status: string;
+        tasks_by_status: {
+            type: string;
+            fields: {
+                id: { id: string };
+                size: string;
+            };
+        };
     };
 
+    const tableObjectId = fields.tasks_by_status.fields.id.id;
+
     const dynamicField = await suiClient.getDynamicFieldObject({
-        parentId: fields.tasks_by_status,
+        parentId: tableObjectId,
         name: {
             type: "u8",
             value: status,
