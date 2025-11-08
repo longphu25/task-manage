@@ -14,11 +14,18 @@ use sui::address;
 use sui::balance::{Self, Balance};
 use sui::clock::{Self, Clock};
 use sui::coin::{Self, Coin};
+use sui::display;
 use sui::dynamic_field as df;
 use sui::event;
+use sui::package;
 use sui::sui::SUI;
 use sui::table::{Self, Table};
 use task_manage::version::{Self, Version};
+
+// ==================== One-Time Witness ====================
+
+/// One-Time Witness for claiming Publisher
+public struct TASK_MANAGE has drop {}
 
 // ==================== Error Codes ====================
 
@@ -89,6 +96,7 @@ public struct Task has key, store {
     creator: address,
     title: String,
     description: String,
+    image_url: String,
     content_blob_id: Option<String>,
     file_blob_ids: vector<String>,
     created_at: u64,
@@ -123,7 +131,31 @@ public struct TaskRegistry has key {
 }
 
 /// Initialize function - automatically runs when contract is published
-fun init(ctx: &mut TxContext) {
+fun init(otw: TASK_MANAGE, ctx: &mut TxContext) {
+    // Create Publisher for Display
+    let publisher = package::claim(otw, ctx);
+
+    // Configure Display for Task
+    let keys = vector[b"name".to_string(), b"image_url".to_string(), b"description".to_string()];
+    let values = vector[
+        b"{title}".to_string(),
+        b"{image_url}".to_string(),
+        b"{description}".to_string(),
+    ];
+
+    let mut display = display::new_with_fields<Task>(
+        &publisher,
+        keys,
+        values,
+        ctx,
+    );
+    display.update_version();
+
+    // Transfer Publisher and Display to deployer
+    transfer::public_transfer(publisher, ctx.sender());
+    transfer::public_transfer(display, ctx.sender());
+
+    // Initialize TaskRegistry
     let mut registry = TaskRegistry {
         id: object::new(ctx),
         tasks_by_status: table::new(ctx),
@@ -140,7 +172,7 @@ fun init(ctx: &mut TxContext) {
 /// Test-only function to initialize registry in test environment
 #[test_only]
 public fun init_for_testing(ctx: &mut TxContext) {
-    init(ctx);
+    init(TASK_MANAGE {}, ctx);
 }
 
 // ==================== Events ====================
@@ -331,6 +363,7 @@ public fun create_task(
     version: &Version,
     title: String,
     description: String,
+    image_url: String,
     due_date: Option<u64>,
     priority: u8,
     category: String,
@@ -364,6 +397,7 @@ public fun create_task(
         creator: tx_context::sender(ctx),
         title,
         description,
+        image_url,
         content_blob_id: option::none(),
         file_blob_ids: vector::empty(),
         created_at: current_time,
@@ -649,6 +683,7 @@ public fun delete_task(
         creator: _,
         title: _,
         description: _,
+        image_url: _,
         content_blob_id: _,
         file_blob_ids: _,
         created_at: _,
@@ -1208,6 +1243,10 @@ public fun get_title(task: &Task): String {
 
 public fun get_description(task: &Task): String {
     task.description
+}
+
+public fun get_image_url(task: &Task): String {
+    task.image_url
 }
 
 public fun get_content_blob_id(task: &Task): Option<String> {

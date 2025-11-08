@@ -74,6 +74,8 @@ use sui::clock::{Clock};
 #[test_only]
 use sui::coin::{Self, Coin};
 #[test_only]
+use sui::display::{Display};
+#[test_only]
 use sui::sui::SUI;
 #[test_only]
 use std::string::{Self};
@@ -103,6 +105,9 @@ const CREATOR: address = @0xA;
 const USER_B: address = @0xB;
 const USER_C: address = @0xC;
 
+// Default image URL for tests
+const DEFAULT_IMAGE_URL: vector<u8> = b"https://static.vecteezy.com/system/resources/previews/025/638/355/large_2x/simple-task-icon-the-icon-can-be-used-for-websites-print-templates-presentation-templates-illustrations-etc-free-vector.jpg";
+
 // Helper function to create a simple task
 fun create_simple_task(scenario: &mut Scenario, creator: address): address {
     ts::next_tx(scenario, creator);
@@ -115,6 +120,7 @@ fun create_simple_task(scenario: &mut Scenario, creator: address): address {
             &version,
             string::utf8(b"Test Task"),
             string::utf8(b"Test Description"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(1000000), // due_date
             priority_medium(),
             string::utf8(b"Development"),
@@ -159,6 +165,7 @@ fun test_create_task_success() {
             &version,
             string::utf8(b"My First Task"),
             string::utf8(b"This is a test task"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(1000000),
             priority_high(),
             string::utf8(b"Testing"),
@@ -170,11 +177,12 @@ fun test_create_task_success() {
 
         assert!(task_manage::get_title(&task) == string::utf8(b"My First Task"), 0);
         assert!(task_manage::get_description(&task) == string::utf8(b"This is a test task"), 1);
-        assert!(task_manage::get_creator(&task) == CREATOR, 2);
-        assert!(task_manage::get_priority(&task) == priority_high(), 3);
-        assert!(task_manage::get_status(&task) == status_todo(), 4);
-        assert!(task_manage::get_category(&task) == string::utf8(b"Testing"), 5);
-        assert!(vector::length(&task_manage::get_tags(&task)) == 2, 6);
+        assert!(task_manage::get_image_url(&task) == string::utf8(DEFAULT_IMAGE_URL), 2);
+        assert!(task_manage::get_creator(&task) == CREATOR, 3);
+        assert!(task_manage::get_priority(&task) == priority_high(), 4);
+        assert!(task_manage::get_status(&task) == status_todo(), 5);
+        assert!(task_manage::get_category(&task) == string::utf8(b"Testing"), 6);
+        assert!(vector::length(&task_manage::get_tags(&task)) == 2, 7);
 
         ts::return_shared(version);
         ts::return_shared(registry);
@@ -1200,6 +1208,7 @@ fun test_invalid_priority() {
             &version,
             string::utf8(b"Task"),
             string::utf8(b"Description"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(1000000),
             99, // Invalid priority
             string::utf8(b"Category"),
@@ -1317,6 +1326,7 @@ fun test_is_overdue() {
             &version,
             string::utf8(b"Task"),
             string::utf8(b"Description"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(100), // due_date in the past
             priority_medium(),
             string::utf8(b"Category"),
@@ -1385,6 +1395,7 @@ fun test_task_with_no_due_date() {
             &version,
             string::utf8(b"No Deadline Task"),
             string::utf8(b"This task has no deadline"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::none(), // No due date
             priority_medium(),
             string::utf8(b"Flexible"),
@@ -2460,6 +2471,7 @@ fun test_registry_status_indexing() {
             &version,
             string::utf8(b"Task 1"),
             string::utf8(b"Desc 1"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(1000000),
             priority_medium(),
             string::utf8(b"Cat1"),
@@ -2475,6 +2487,7 @@ fun test_registry_status_indexing() {
             &version,
             string::utf8(b"Task 2"),
             string::utf8(b"Desc 2"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(1000000),
             priority_medium(),
             string::utf8(b"Cat2"),
@@ -2490,6 +2503,7 @@ fun test_registry_status_indexing() {
             &version,
             string::utf8(b"Task 3"),
             string::utf8(b"Desc 3"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(1000000),
             priority_medium(),
             string::utf8(b"Cat3"),
@@ -2505,6 +2519,7 @@ fun test_registry_status_indexing() {
             &version,
             string::utf8(b"Task 4"),
             string::utf8(b"Desc 4"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::some(1000000),
             priority_medium(),
             string::utf8(b"Cat4"),
@@ -2608,6 +2623,7 @@ fun test_version_check_valid() {
             &version,
             string::utf8(b"Test Task"),
             string::utf8(b"Description"),
+            string::utf8(DEFAULT_IMAGE_URL),
             option::none(),
             priority_medium(),
             string::utf8(b"Testing"),
@@ -2672,6 +2688,92 @@ fun test_version_check_on_all_operations() {
         ts::return_shared(version);
         ts::return_shared(clock);
         ts::return_to_sender(&scenario, task);
+    };
+
+    ts::end(scenario);
+}
+
+// ==================== Display Tests ====================
+
+#[test]
+fun test_display_object_created() {
+    let mut scenario = ts::begin(CREATOR);
+
+    // Create system objects including Clock
+    ts::create_system_objects(&mut scenario);
+
+    // Initialize version and registry
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let ctx = ts::ctx(&mut scenario);
+        init_version(ctx);
+        init_task_registry(ctx);
+    };
+
+    // Check that Display object is transferred to deployer
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let display = ts::take_from_sender<Display<Task>>(&scenario);
+        
+        // Verify display was created (we can take it means it exists)
+        let fields = display.fields();
+        
+        // Verify the display has the correct fields
+        assert!(fields.get(&string::utf8(b"name")) == &string::utf8(b"{title}"), 0);
+        assert!(fields.get(&string::utf8(b"image_url")) == &string::utf8(b"{image_url}"), 1);
+        assert!(fields.get(&string::utf8(b"description")) == &string::utf8(b"{description}"), 2);
+        assert!(display.version() == 1, 3);
+        
+        ts::return_to_sender(&scenario, display);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_task_has_image_url() {
+    let mut scenario = ts::begin(CREATOR);
+
+    // Create system objects including Clock
+    ts::create_system_objects(&mut scenario);
+
+    // Initialize version and registry
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let ctx = ts::ctx(&mut scenario);
+        init_version(ctx);
+        init_task_registry(ctx);
+    };
+
+    let custom_image = b"https://example.com/custom-image.jpg";
+
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let version = ts::take_shared<Version>(&scenario);
+        let mut registry = ts::take_shared<TaskRegistry>(&scenario);
+        let clock = ts::take_shared<Clock>(&scenario);
+        let ctx = ts::ctx(&mut scenario);
+        let task = task_manage::create_task(
+            &version,
+            string::utf8(b"Task with Custom Image"),
+            string::utf8(b"This task has a custom image"),
+            string::utf8(custom_image),
+            option::none(),
+            priority_high(),
+            string::utf8(b"Visual"),
+            vector::empty(),
+            &clock,
+            &mut registry,
+            ctx,
+        );
+
+        // Verify image_url is stored correctly
+        assert!(task_manage::get_image_url(&task) == string::utf8(custom_image), 0);
+
+        ts::return_shared(version);
+        ts::return_shared(registry);
+        ts::return_shared(clock);
+        sui::transfer::public_transfer(task, CREATOR);
     };
 
     ts::end(scenario);
