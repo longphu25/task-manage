@@ -321,35 +321,29 @@ fun remove_from_registry(registry: &mut TaskRegistry, task_id: ID, status: u8) {
 
 /// Create a new task
 public fun create_task(
-    title: vector<u8>,
-    description: vector<u8>,
+    title: String,
+    description: String,
     due_date: Option<u64>,
     priority: u8,
-    category: vector<u8>,
-    tags: vector<vector<u8>>,
+    category: String,
+    tags: vector<String>,
     clock: &Clock,
     registry: &mut TaskRegistry,
     ctx: &mut TxContext,
 ): Task {
-    let task_title = string::utf8(title);
-    let task_description = string::utf8(description);
-    let task_category = string::utf8(category);
-
     // Validations
-    validate_string_length(&task_title, MAX_TITLE_LENGTH, ETitleTooLong);
-    validate_string_length(&task_description, MAX_DESCRIPTION_LENGTH, EDescriptionTooLong);
-    validate_string_length(&task_category, MAX_CATEGORY_LENGTH, ECategoryTooLong);
+    validate_string_length(&title, MAX_TITLE_LENGTH, ETitleTooLong);
+    validate_string_length(&description, MAX_DESCRIPTION_LENGTH, EDescriptionTooLong);
+    validate_string_length(&category, MAX_CATEGORY_LENGTH, ECategoryTooLong);
     validate_priority(priority);
     assert!(vector::length(&tags) <= MAX_TAGS_COUNT, ETooManyTags);
 
-    // Convert and validate tags
-    let mut task_tags = vector::empty<String>();
+    // Validate tags
     let mut i = 0;
     let tags_len = vector::length(&tags);
     while (i < tags_len) {
-        let tag = string::utf8(*vector::borrow(&tags, i));
-        validate_string_length(&tag, MAX_TAG_LENGTH, ETagTooLong);
-        vector::push_back(&mut task_tags, tag);
+        let tag = vector::borrow(&tags, i);
+        validate_string_length(tag, MAX_TAG_LENGTH, ETagTooLong);
         i = i + 1;
     };
 
@@ -358,8 +352,8 @@ public fun create_task(
     let task = Task {
         id: object::new(ctx),
         creator: tx_context::sender(ctx),
-        title: task_title,
-        description: task_description,
+        title,
+        description,
         content_blob_id: option::none(),
         file_blob_ids: vector::empty(),
         created_at: current_time,
@@ -367,8 +361,8 @@ public fun create_task(
         due_date,
         priority,
         status: STATUS_TODO,
-        category: task_category,
-        tags: task_tags,
+        category,
+        tags,
     };
 
     let task_id_addr = object::uid_to_address(&task.id);
@@ -390,22 +384,19 @@ public fun create_task(
 /// Update task basic information
 public fun update_task_info(
     task: &mut Task,
-    title: vector<u8>,
-    description: vector<u8>,
+    title: String,
+    description: String,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let sender = tx_context::sender(ctx);
     assert!(has_permission(task, sender, ROLE_EDITOR), EInsufficientPermission);
 
-    let new_title = string::utf8(title);
-    let new_description = string::utf8(description);
+    validate_string_length(&title, MAX_TITLE_LENGTH, ETitleTooLong);
+    validate_string_length(&description, MAX_DESCRIPTION_LENGTH, EDescriptionTooLong);
 
-    validate_string_length(&new_title, MAX_TITLE_LENGTH, ETitleTooLong);
-    validate_string_length(&new_description, MAX_DESCRIPTION_LENGTH, EDescriptionTooLong);
-
-    task.title = new_title;
-    task.description = new_description;
+    task.title = title;
+    task.description = description;
     task.updated_at = clock::timestamp_ms(clock);
 
     event::emit(TaskUpdated {

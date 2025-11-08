@@ -106,12 +106,12 @@ fun create_simple_task(scenario: &mut Scenario, creator: address): address {
         let clock = ts::take_shared<Clock>(scenario);
         let ctx = ts::ctx(scenario);
         let task = task_manage::create_task(
-            b"Test Task",
-            b"Test Description",
+            string::utf8(b"Test Task"),
+            string::utf8(b"Test Description"),
             option::some(1000000), // due_date
             priority_medium(),
-            b"Development",
-            vector[b"urgent", b"backend"],
+            string::utf8(b"Development"),
+            vector[string::utf8(b"urgent"), string::utf8(b"backend")],
             &clock,
             &mut registry,
             ctx,
@@ -146,12 +146,12 @@ fun test_create_task_success() {
         let clock = ts::take_shared<Clock>(&scenario);
         let ctx = ts::ctx(&mut scenario);
         let task = task_manage::create_task(
-            b"My First Task",
-            b"This is a test task",
+            string::utf8(b"My First Task"),
+            string::utf8(b"This is a test task"),
             option::some(1000000),
             priority_high(),
-            b"Testing",
-            vector[b"test", b"mvp"],
+            string::utf8(b"Testing"),
+            vector[string::utf8(b"test"), string::utf8(b"mvp")],
             &clock,
             &mut registry,
             ctx,
@@ -197,8 +197,8 @@ fun test_update_task_info() {
 
         task_manage::update_task_info(
             &mut task,
-            b"Updated Title",
-            b"Updated Description",
+            string::utf8(b"Updated Title"),
+            string::utf8(b"Updated Description"),
             &clock,
             ctx,
         );
@@ -1055,11 +1055,11 @@ fun test_invalid_priority() {
         let clock = ts::take_shared<Clock>(&scenario);
         let ctx = ts::ctx(&mut scenario);
         let task = task_manage::create_task(
-            b"Task",
-            b"Description",
+            string::utf8(b"Task"),
+            string::utf8(b"Description"),
             option::some(1000000),
             99, // Invalid priority
-            b"Category",
+            string::utf8(b"Category"),
             vector::empty(),
             &clock,
             &mut registry,
@@ -1162,11 +1162,11 @@ fun test_is_overdue() {
         let clock = ts::take_shared<Clock>(&scenario);
         let ctx = ts::ctx(&mut scenario);
         let task = task_manage::create_task(
-            b"Task",
-            b"Description",
+            string::utf8(b"Task"),
+            string::utf8(b"Description"),
             option::some(100), // due_date in the past
             priority_medium(),
-            b"Category",
+            string::utf8(b"Category"),
             vector::empty(),
             &clock,
             &mut registry,
@@ -1226,11 +1226,11 @@ fun test_task_with_no_due_date() {
 
         // Create task without due date
         let task = task_manage::create_task(
-            b"No Deadline Task",
-            b"This task has no deadline",
+            string::utf8(b"No Deadline Task"),
+            string::utf8(b"This task has no deadline"),
             option::none(), // No due date
             priority_medium(),
-            b"Flexible",
+            string::utf8(b"Flexible"),
             vector::empty(),
             &clock,
             &mut registry,
@@ -2176,11 +2176,11 @@ fun test_registry_status_indexing() {
 
         // Create task 1
         let task1 = task_manage::create_task(
-            b"Task 1",
-            b"Desc 1",
+            string::utf8(b"Task 1"),
+            string::utf8(b"Desc 1"),
             option::some(1000000),
             priority_medium(),
-            b"Cat1",
+            string::utf8(b"Cat1"),
             vector::empty(),
             &clock,
             &mut registry,
@@ -2190,11 +2190,11 @@ fun test_registry_status_indexing() {
 
         // Create task 2
         let mut task2 = task_manage::create_task(
-            b"Task 2",
-            b"Desc 2",
+            string::utf8(b"Task 2"),
+            string::utf8(b"Desc 2"),
             option::some(1000000),
             priority_medium(),
-            b"Cat2",
+            string::utf8(b"Cat2"),
             vector::empty(),
             &clock,
             &mut registry,
@@ -2204,11 +2204,11 @@ fun test_registry_status_indexing() {
 
         // Create task 3
         let mut task3 = task_manage::create_task(
-            b"Task 3",
-            b"Desc 3",
+            string::utf8(b"Task 3"),
+            string::utf8(b"Desc 3"),
             option::some(1000000),
             priority_medium(),
-            b"Cat3",
+            string::utf8(b"Cat3"),
             vector::empty(),
             &clock,
             &mut registry,
@@ -2218,11 +2218,11 @@ fun test_registry_status_indexing() {
 
         // Create task 4
         let mut task4 = task_manage::create_task(
-            b"Task 4",
-            b"Desc 4",
+            string::utf8(b"Task 4"),
+            string::utf8(b"Desc 4"),
             option::some(1000000),
             priority_medium(),
-            b"Cat4",
+            string::utf8(b"Cat4"),
             vector::empty(),
             &clock,
             &mut registry,
