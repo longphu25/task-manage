@@ -17,13 +17,36 @@ export const getPriorityLabel = (priority: number) => {
 // Helper function to format due date
 export const formatDueDate = (due_date: string) => {
     if (due_date === "0") return "No due date";
-    const date = new Date(parseInt(due_date) * 1000);
+    // Due date is stored in milliseconds
+    const date = new Date(parseInt(due_date));
     return date.toLocaleDateString();
 };
 
 // Helper function to check if task is overdue
 export const isOverdue = (due_date: string, is_completed: boolean) => {
     if (due_date === "0" || is_completed) return false;
-    const dueTime = parseInt(due_date) * 1000;
+    // Due date is stored in milliseconds
+    const dueTime = parseInt(due_date);
     return Date.now() > dueTime;
+};
+
+// Helper function to get status label
+export const getStatusLabel = (status: number) => {
+    switch (status) {
+        case 0: return { label: "To Do", color: "bg-gray-500" };
+        case 1: return { label: "In Progress", color: "bg-blue-500" };
+        case 2: return { label: "Completed", color: "bg-green-500" };
+        case 3: return { label: "Archived", color: "bg-orange-500" };
+        default: return { label: "Unknown", color: "bg-gray-500" };
+    }
+};
+
+// Helper function to get role label
+export const getRoleLabel = (role: number) => {
+    switch (role) {
+        case 1: return "Viewer";
+        case 2: return "Editor";
+        case 3: return "Owner";
+        default: return "Unknown";
+    }
 };

@@ -36,6 +36,8 @@ import {
 import { CustomBtn } from "./connect-button";
 import { CreateTask } from "./task-manager/create-task";
 
+import { ConnectButton } from "@mysten/dapp-kit";
+
 const data = {
   user: {
     name: "shadcn",
@@ -180,6 +182,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
+
+                  <ConnectButton />
         <CustomBtn />
         <NavUser user={data.user} />
       </SidebarFooter>

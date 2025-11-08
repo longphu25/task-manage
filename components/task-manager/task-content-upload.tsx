@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
@@ -47,11 +51,174 @@ const walrusServices = [
     },
 ];
 
-export const TaskContentUpload = () => {
+interface TaskContentUploadProps {
+    taskId?: string;
+}
+
+export const TaskContentUpload = ({ taskId }: TaskContentUploadProps) => {
     const [content, setContent] = useState("");
     const [files, setFiles] = useState<FileList | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [selectedService, setSelectedService] = useState("service1");
+
+    const account = useCurrentAccount();
+    const suiClient = useSuiClient();
+    const queryClient = useQueryClient();
+    const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+
+    const handleUpload = async () => {
+        if (!taskId || !account) {
+            toast.error("Task ID or account not available");
+            return;
+        }
+
+        const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
+        const versionObjectId = process.env.NEXT_PUBLIC_VERSION_ID;
+
+        if (!packageId || !versionObjectId) {
+            toast.error("Configuration error: Missing package or version ID");
+            return;
+        }
+
+        const service = walrusServices.find(s => s.id === selectedService);
+        if (!service) {
+            toast.error("Please select a valid Walrus service");
+            return;
+        }
+
+        setIsUploading(true);
+
+        try {
+            const tx = new Transaction();
+            let contentBlobId: string | null = null;
+            const fileBlobIds: string[] = [];
+
+            // Upload content to Walrus if provided
+            if (content.trim()) {
+                try {
+                    const contentBlob = new Blob([content], { type: 'text/plain' });
+                    const formData = new FormData();
+                    formData.append('file', contentBlob, 'content.txt');
+
+                    const response = await fetch(`${service.publisherUrl}/v1/store`, {
+                        method: 'PUT',
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Walrus upload failed: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    contentBlobId = result.newlyCreated?.blobObject?.blobId || 
+                                   result.alreadyCertified?.blobId;
+                    
+                    if (!contentBlobId) {
+                        throw new Error("Failed to get blob ID from Walrus response");
+                    }
+
+                    toast.success("Content uploaded to Walrus");
+                } catch (error) {
+                    console.error("Error uploading content:", error);
+                    toast.error("Failed to upload content to Walrus");
+                    setIsUploading(false);
+                    return;
+                }
+            }
+
+            // Upload files to Walrus if provided
+            if (files && files.length > 0) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        const response = await fetch(`${service.publisherUrl}/v1/store`, {
+                            method: 'PUT',
+                            body: formData,
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Walrus upload failed for ${file.name}: ${response.statusText}`);
+                        }
+
+                        const result = await response.json();
+                        const blobId = result.newlyCreated?.blobObject?.blobId || 
+                                      result.alreadyCertified?.blobId;
+                        
+                        if (!blobId) {
+                            throw new Error(`Failed to get blob ID for ${file.name}`);
+                        }
+
+                        fileBlobIds.push(blobId);
+                        toast.success(`Uploaded: ${file.name}`);
+                    } catch (error) {
+                        console.error(`Error uploading file ${file.name}:`, error);
+                        toast.error(`Failed to upload ${file.name}`);
+                    }
+                }
+            }
+
+            // Update task with content blob ID if available
+            if (contentBlobId) {
+                tx.moveCall({
+                    target: `${packageId}::task_manage::add_content`,
+                    arguments: [
+                        tx.object(versionObjectId), // version: &Version
+                        tx.object(taskId), // task: &mut Task
+                        tx.pure.option("string", contentBlobId), // content_blob_id: Option<String>
+                        tx.object("0x6"), // clock: &Clock
+                    ],
+                });
+            }
+
+            // Update task with file blob IDs if available
+            if (fileBlobIds.length > 0) {
+                tx.moveCall({
+                    target: `${packageId}::task_manage::add_files`,
+                    arguments: [
+                        tx.object(versionObjectId), // version: &Version
+                        tx.object(taskId), // task: &mut Task
+                        tx.pure.vector("string", fileBlobIds), // file_blob_ids: vector<String>
+                        tx.object("0x6"), // clock: &Clock
+                    ],
+                });
+            }
+
+            // Execute transaction if we have any updates
+            if (contentBlobId || fileBlobIds.length > 0) {
+                const resp = await signAndExecuteTransaction({
+                    transaction: tx,
+                });
+                
+                await suiClient.waitForTransaction({ digest: resp.digest });
+                await queryClient.invalidateQueries({
+                    queryKey: ["testnet", "getObject"],
+                });
+
+                toast.success("Task updated successfully!", {
+                    description: `Added ${contentBlobId ? 'content' : ''} ${contentBlobId && fileBlobIds.length > 0 ? 'and' : ''} ${fileBlobIds.length > 0 ? `${fileBlobIds.length} file(s)` : ''}`,
+                });
+
+                // Reset form
+                setContent("");
+                setFiles(null);
+                // Reset file input
+                const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                if (fileInput) fileInput.value = '';
+            } else {
+                toast.error("No content or files to upload");
+            }
+        } catch (error) {
+            console.error("Error uploading:", error);
+            toast.error("Failed to update task", {
+                description: error instanceof Error ? error.message : "An unexpected error occurred",
+            });
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     return (
         <Card className="p-6">
@@ -119,9 +286,10 @@ export const TaskContentUpload = () => {
 
                 {/* --- Upload button --- */}
                 <Button
-                    // onClick={handleUpload}
+                    onClick={handleUpload}
                     disabled={
                         isUploading ||
+                        !taskId ||
                         (!content.trim() && (!files || files.length === 0))
                     }
                     size="lg"
