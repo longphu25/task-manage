@@ -188,9 +188,9 @@ export const CreateTask = () => {
                         <Label htmlFor="image-url">Image URL (Optional)</Label>
                         <Input
                             id="image-url"
-                            value={imageUrl}
+                            value={imageUrl ? imageUrl : "https://cdn.prod.website-files.com/6864f039b26f4afedada6bc5/6864f039b26f4afedada6bf4_footer-img.svg"}
                             onChange={(e) => setImageUrl(e.target.value)}
-                            placeholder="https://example.com/image.png"
+                            placeholder="https://cdn.prod.website-files.com/6864f039b26f4afedada6bc5/6864f039b26f4afedada6bf4_footer-img.svg"
                             className="bg-background"
                         />
                     </div>
