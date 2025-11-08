@@ -80,9 +80,9 @@ export const CreateTask = () => {
         try {
             const tx = new Transaction();
             
-            // Prepare due_date as Option<u64>
+            // Prepare due_date as Option<u64> - timestamp in milliseconds
             const dueDateTimestamp = dueDate 
-                ? Math.floor(new Date(dueDate).getTime() / 1000) 
+                ? Math.floor(new Date(dueDate).getTime()) 
                 : null;
 
             const task = tx.moveCall({

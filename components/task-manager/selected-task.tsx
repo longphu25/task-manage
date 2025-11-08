@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import { TaskViewer } from "./task-viewer";
 import { TaskContentUpload } from "./task-content-upload";
 import { ShareTask } from "./share-task";
+import { TaskUpdate } from "./task-update";
+import { TaskComments } from "./task-comments";
+import { TaskRewards } from "./task-rewards";
 
 interface SelectedTaskProps {
     selectedTask: string | undefined;
@@ -31,31 +34,49 @@ export function SelectedTask({
                         Managing Task: {selectedTask?.slice(0, 8)}...
                     </DialogTitle>
                     <DialogDescription>
-                        View, upload files, or share this task.
+                        View, edit, upload files, manage comments, rewards, or share this task.
                     </DialogDescription>
                 </DialogHeader>
 
                 {/* --- Scrollable Content Area --- */}
                 <div className="flex-1 overflow-y-auto mt-4">
                     <Tabs defaultValue="view" className="h-full flex flex-col">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-6">
                             <TabsTrigger
                                 value="view"
                                 className="cursor-pointer"
                             >
-                                View Task
+                                View
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="update"
+                                className="cursor-pointer"
+                            >
+                                Update
                             </TabsTrigger>
                             <TabsTrigger
                                 value="upload"
                                 className="cursor-pointer"
                             >
-                                Add Content & Files
+                                Content
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="comments"
+                                className="cursor-pointer"
+                            >
+                                Comments
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="rewards"
+                                className="cursor-pointer"
+                            >
+                                Rewards
                             </TabsTrigger>
                             <TabsTrigger
                                 value="share"
                                 className="cursor-pointer"
                             >
-                                Share Task
+                                Share
                             </TabsTrigger>
                         </TabsList>
 
@@ -65,9 +86,24 @@ export function SelectedTask({
                                 <TaskViewer taskId={selectedTask!} />
                             </TabsContent>
 
+                            {/* --- Tab: Update --- */}
+                            <TabsContent value="update" className="h-full">
+                                <TaskUpdate taskId={selectedTask!} />
+                            </TabsContent>
+
                             {/* --- Tab: Upload --- */}
                             <TabsContent value="upload" className="h-full">
-                                <TaskContentUpload />
+                                <TaskContentUpload taskId={selectedTask} />
+                            </TabsContent>
+
+                            {/* --- Tab: Comments --- */}
+                            <TabsContent value="comments" className="h-full">
+                                <TaskComments taskId={selectedTask!} />
+                            </TabsContent>
+
+                            {/* --- Tab: Rewards --- */}
+                            <TabsContent value="rewards" className="h-full">
+                                <TaskRewards taskId={selectedTask!} />
                             </TabsContent>
 
                             {/* --- Tab: Share --- */}

@@ -1,10 +1,11 @@
 "use client";
-"use client";
 
 import { useState } from "react";
-import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { isValidSuiAddress } from "@mysten/sui/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import {
     Card,
@@ -16,8 +17,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { ROLE_VIEWER, ROLE_EDITOR, ROLE_OWNER } from "@/types";
 
 interface ShareTaskProps {
     taskId: string | undefined;
@@ -25,72 +33,90 @@ interface ShareTaskProps {
 }
 
 export function ShareTask({ taskId, onShared }: ShareTaskProps) {
-    const [shareWith, setShareWith] = useState("");
+    const [userAddress, setUserAddress] = useState("");
+    const [selectedRole, setSelectedRole] = useState(String(ROLE_VIEWER));
     const [isSharing, setIsSharing] = useState(false);
 
+    const account = useCurrentAccount();
     const suiClient = useSuiClient();
+    const queryClient = useQueryClient();
+    const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
 
-    const { mutate: signAndExecute } = useSignAndExecuteTransaction({
-        execute: async ({ bytes, signature }) =>
-            await suiClient.executeTransactionBlock({
-                transactionBlock: bytes,
-                signature,
-                options: {
-                    showRawEffects: true,
-                    showEffects: true,
-                },
-            }),
-    });
+    const shareTask = async () => {
+        if (!taskId || !account) return;
 
-    // const shareTask = () => {
-    //     const addresses = shareWith
-    //         .split(",")
-    //         .map((addr) => addr.trim())
-    //         .filter((addr) => addr.length > 0);
+        const address = userAddress.trim();
 
-    //     if (addresses.length === 0) {
-    //         alert("Please enter at least one valid address");
-    //         return;
-    //     }
+        if (!address) {
+            toast.error("Please enter a valid address");
+            return;
+        }
 
-    //     for (const addr of addresses) {
-    //         if (!isValidSuiAddress(addr)) {
-    //             alert(`Invalid Sui address: ${addr}`);
-    //             return;
-    //         }
-    //     }
+        if (!isValidSuiAddress(address)) {
+            toast.error(`Invalid Sui address: ${address}`);
+            return;
+        }
 
-    //     setIsSharing(true);
+        const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
+        const versionObjectId = process.env.NEXT_PUBLIC_VERSION_ID;
 
-    //     const tx = new Transaction();
-    //     tx.moveCall({
-    //         target: `${packageId}::task_manager::share_task`,
-    //         arguments: [
-    //             tx.object(taskId),
-    //             tx.pure.vector("address", addresses),
-    //         ],
-    //     });
-    //     tx.setGasBudget(10_000_000);
+        if (!packageId || !versionObjectId) {
+            toast.error("Configuration error: Missing package or version ID");
+            return;
+        }
 
-    //     signAndExecute(
-    //         { transaction: tx },
-    //         {
-    //             onSuccess: () => {
-    //                 alert("Task shared successfully!");
-    //                 setShareWith("");
-    //                 onShared?.();
-    //                 setIsSharing(false);
-    //             },
-    //             onError: (error) => {
-    //                 console.error("Error sharing task:", error);
-    //                 alert("Failed to share task");
-    //                 setIsSharing(false);
-    //             },
-    //         }
-    //     );
-    // };
+        setIsSharing(true);
 
-    if (!taskId) return;
+        try {
+            const tx = new Transaction();
+            
+            tx.moveCall({
+                target: `${packageId}::task_manage::add_user_with_role`,
+                arguments: [
+                    tx.object(versionObjectId), // version: &Version
+                    tx.object(taskId), // task: &mut Task
+                    tx.pure.address(address), // user: address
+                    tx.pure.u8(Number(selectedRole)), // role: u8
+                    tx.object("0x6"), // clock: &Clock
+                ],
+            });
+
+            const resp = await signAndExecuteTransaction({
+                transaction: tx,
+            });
+            
+            await suiClient.waitForTransaction({ digest: resp.digest });
+            await queryClient.invalidateQueries({
+                queryKey: ["testnet", "getObject"],
+            });
+
+            toast.success("Task shared successfully!", {
+                description: `Granted ${getRoleLabel(Number(selectedRole))} access to ${address.slice(0, 8)}...`,
+            });
+
+            setUserAddress("");
+            setSelectedRole(String(ROLE_VIEWER));
+            onShared?.();
+        } catch (error) {
+            console.error("Error sharing task:", error);
+            toast.error("Failed to share task", {
+                description: error instanceof Error ? error.message : "An unexpected error occurred",
+            });
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
+    const getRoleLabel = (role: number) => {
+        switch (role) {
+            case ROLE_VIEWER: return "Viewer";
+            case ROLE_EDITOR: return "Editor";
+            case ROLE_OWNER: return "Owner";
+            default: return "Unknown";
+        }
+    };
+
+    if (!taskId) return null;
 
     return (
         <Card className="flex flex-col">
@@ -101,20 +127,45 @@ export function ShareTask({ taskId, onShared }: ShareTaskProps) {
             <ScrollArea className="flex-1 px-6">
                 <CardContent className="space-y-4 pb-6">
                     <div className="space-y-2">
-                        <Label htmlFor="shareWith">
-                            Share with users (comma-separated)
+                        <Label htmlFor="userAddress">
+                            User Address
                         </Label>
                         <Input
-                            id="shareWith"
-                            value={shareWith}
-                            onChange={(e) => setShareWith(e.target.value)}
-                            placeholder="0x123..., 0x456..."
+                            id="userAddress"
+                            value={userAddress}
+                            onChange={(e) => setUserAddress(e.target.value)}
+                            placeholder="0x123..."
                             disabled={isSharing}
                         />
                         <p className="text-sm text-muted-foreground">
-                            Enter Sui wallet addresses separated by commas.
-                            Shared users will be able to decrypt and view the
-                            task content and files.
+                            Enter the Sui wallet address of the user you want to share with.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="role">Access Role</Label>
+                        <Select
+                            value={selectedRole}
+                            onValueChange={setSelectedRole}
+                            disabled={isSharing}
+                        >
+                            <SelectTrigger id="role">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={String(ROLE_VIEWER)}>
+                                    Viewer - Can view task details
+                                </SelectItem>
+                                <SelectItem value={String(ROLE_EDITOR)}>
+                                    Editor - Can edit task and add comments
+                                </SelectItem>
+                                <SelectItem value={String(ROLE_OWNER)}>
+                                    Owner - Full control including sharing
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground">
+                            Select the level of access for this user.
                         </p>
                     </div>
                 </CardContent>
@@ -122,11 +173,11 @@ export function ShareTask({ taskId, onShared }: ShareTaskProps) {
 
             <CardFooter className="border-t px-6 py-4">
                 <Button
-                    // onClick={shareTask}
-                    disabled={!shareWith.trim() || isSharing}
+                    onClick={shareTask}
+                    disabled={!userAddress.trim() || isSharing}
                     className="w-full"
                 >
-                    {isSharing ? "Sharing..." : "Share Task"}
+                    {isSharing ? "Sharing..." : "Grant Access"}
                 </Button>
             </CardFooter>
         </Card>
