@@ -207,13 +207,13 @@ export default function Home() {
             <div className="flex flex-col items-center gap-4 sm:flex-row md:items-start">
               <Link
                 href="/dashboard"
-                className="inline-flex items-center justify-center rounded-full bg-[#071311] px-8 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#CAEAE5] transition hover:bg-[#0c2622]"
+                className="inline-flex items-center justify-center rounded-full bg-[#071311] px-8 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#CAEAE5] transition hover:bg-[#0c2622] cursor-pointer"
               >
                 Launch App
               </Link>
               <Link
                 href="#features"
-                className="inline-flex items-center gap-2 rounded-full border border-[#071311] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] transition hover:bg-[#071311] hover:text-[#CAEAE5]"
+                className="inline-flex items-center gap-2 rounded-full border border-[#071311] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] transition hover:bg-[#071311] hover:text-[#CAEAE5] cursor-pointer"
               >
                 Explore Features
                 <ArrowRight className="h-4 w-4" />
@@ -372,7 +372,7 @@ export default function Home() {
                 />
                 <button
                   type="submit"
-                  className="h-12 rounded-full bg-[#071311] px-6 text-sm font-semibold uppercase tracking-[0.25em] text-[#CAEAE5] transition hover:bg-[#0c2622]"
+                  className="h-12 rounded-full bg-[#071311] px-6 text-sm font-semibold uppercase tracking-[0.25em] text-[#CAEAE5] transition hover:bg-[#0c2622] cursor-pointer"
                 >
                   Notify me
                 </button>
@@ -392,7 +392,7 @@ export default function Home() {
                   <Link
                     key={label}
                     href={href}
-                    className="group flex items-center justify-between rounded-3xl border border-[#071311]/10 bg-white px-5 py-4 text-left transition hover:-translate-y-0.5 hover:border-[#071311]/30 hover:shadow-lg"
+                    className="group flex items-center justify-between rounded-3xl border border-[#071311]/10 bg-white px-5 py-4 text-left transition hover:-translate-y-0.5 hover:border-[#071311]/30 hover:shadow-lg cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#071311] text-[#CAEAE5] shadow-inner shadow-black/20">
