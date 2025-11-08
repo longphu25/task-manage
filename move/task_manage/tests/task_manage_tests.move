@@ -37,6 +37,10 @@
 - Utility Function Tests
   - test_is_overdue
   - test_constants
+- Option<T> Tests
+  - test_task_with_no_due_date
+  - test_task_content_blob_id_none_initially
+  - test_update_due_date_to_none
 - SUI Reward System Tests
   - test_deposit_reward_success
   - test_deposit_reward_multiple_owners
@@ -104,7 +108,7 @@ fun create_simple_task(scenario: &mut Scenario, creator: address): address {
         let task = task_manage::create_task(
             b"Test Task",
             b"Test Description",
-            1000000, // due_date
+            option::some(1000000), // due_date
             priority_medium(),
             b"Development",
             vector[b"urgent", b"backend"],
@@ -144,7 +148,7 @@ fun test_create_task_success() {
         let task = task_manage::create_task(
             b"My First Task",
             b"This is a test task",
-            1000000,
+            option::some(1000000),
             priority_high(),
             b"Testing",
             vector[b"test", b"mvp"],
@@ -662,7 +666,9 @@ fun test_add_content() {
 
         task_manage::add_content(&mut task, b"blob_id_12345", &clock, ctx);
 
-        assert!(task_manage::get_content_blob_id(&task) == string::utf8(b"blob_id_12345"), 0);
+        let content_blob_id = task_manage::get_content_blob_id(&task);
+        assert!(option::is_some(&content_blob_id), 0);
+        assert!(*option::borrow(&content_blob_id) == string::utf8(b"blob_id_12345"), 1);
 
         ts::return_shared(clock);
         ts::return_to_sender(&scenario, task);
@@ -1051,7 +1057,7 @@ fun test_invalid_priority() {
         let task = task_manage::create_task(
             b"Task",
             b"Description",
-            1000000,
+            option::some(1000000),
             99, // Invalid priority
             b"Category",
             vector::empty(),
@@ -1158,7 +1164,7 @@ fun test_is_overdue() {
         let task = task_manage::create_task(
             b"Task",
             b"Description",
-            100, // due_date in the past
+            option::some(100), // due_date in the past
             priority_medium(),
             b"Category",
             vector::empty(),
@@ -1194,6 +1200,129 @@ fun test_constants() {
     assert!(role_viewer() == 1, 8);
     assert!(role_editor() == 2, 9);
     assert!(role_owner() == 3, 10);
+}
+
+// ==================== Option<T> Tests ====================
+
+#[test]
+fun test_task_with_no_due_date() {
+    let mut scenario = ts::begin(CREATOR);
+
+    // Create system objects including Clock
+    ts::create_system_objects(&mut scenario);
+
+    // Initialize registry
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let ctx = ts::ctx(&mut scenario);
+        init_registry(ctx);
+    };
+
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let mut registry = ts::take_shared<TaskRegistry>(&scenario);
+        let clock = ts::take_shared<Clock>(&scenario);
+        let ctx = ts::ctx(&mut scenario);
+
+        // Create task without due date
+        let task = task_manage::create_task(
+            b"No Deadline Task",
+            b"This task has no deadline",
+            option::none(), // No due date
+            priority_medium(),
+            b"Flexible",
+            vector::empty(),
+            &clock,
+            &mut registry,
+            ctx,
+        );
+
+        // Verify due_date is None
+        let due_date = task_manage::get_due_date(&task);
+        assert!(option::is_none(&due_date), 0);
+
+        // Verify task is not overdue (because no due date)
+        assert!(!task_manage::is_overdue(&task, 999999999), 1);
+
+        ts::return_shared(registry);
+        ts::return_shared(clock);
+        sui::transfer::public_transfer(task, CREATOR);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_task_content_blob_id_none_initially() {
+    let mut scenario = ts::begin(CREATOR);
+
+    // Create system objects including Clock
+    ts::create_system_objects(&mut scenario);
+
+    // Initialize registry
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let ctx = ts::ctx(&mut scenario);
+        init_registry(ctx);
+    };
+
+    let _task_id = create_simple_task(&mut scenario, CREATOR);
+
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let task = ts::take_from_sender<Task>(&scenario);
+
+        // Verify content_blob_id is None initially
+        let content_blob_id = task_manage::get_content_blob_id(&task);
+        assert!(option::is_none(&content_blob_id), 0);
+
+        ts::return_to_sender(&scenario, task);
+    };
+
+    ts::end(scenario);
+}
+
+#[test]
+fun test_update_due_date_to_none() {
+    let mut scenario = ts::begin(CREATOR);
+
+    // Create system objects including Clock
+    ts::create_system_objects(&mut scenario);
+
+    // Initialize registry
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let ctx = ts::ctx(&mut scenario);
+        init_registry(ctx);
+    };
+
+    let _task_id = create_simple_task(&mut scenario, CREATOR);
+
+    ts::next_tx(&mut scenario, CREATOR);
+    {
+        let mut task = ts::take_from_sender<Task>(&scenario);
+        let clock = ts::take_shared<Clock>(&scenario);
+        let ctx = ts::ctx(&mut scenario);
+
+        // Verify initially has due date
+        let due_date = task_manage::get_due_date(&task);
+        assert!(option::is_some(&due_date), 0);
+
+        // Update to None (remove due date)
+        task_manage::update_due_date(&mut task, option::none(), &clock, ctx);
+
+        // Verify due_date is now None
+        let due_date_after = task_manage::get_due_date(&task);
+        assert!(option::is_none(&due_date_after), 1);
+
+        // Verify task is not overdue anymore
+        assert!(!task_manage::is_overdue(&task, 999999999), 2);
+
+        ts::return_shared(clock);
+        ts::return_to_sender(&scenario, task);
+    };
+
+    ts::end(scenario);
 }
 
 // ==================== SUI Reward System Tests ====================
@@ -2049,7 +2178,7 @@ fun test_registry_status_indexing() {
         let task1 = task_manage::create_task(
             b"Task 1",
             b"Desc 1",
-            1000000,
+            option::some(1000000),
             priority_medium(),
             b"Cat1",
             vector::empty(),
@@ -2063,7 +2192,7 @@ fun test_registry_status_indexing() {
         let mut task2 = task_manage::create_task(
             b"Task 2",
             b"Desc 2",
-            1000000,
+            option::some(1000000),
             priority_medium(),
             b"Cat2",
             vector::empty(),
@@ -2077,7 +2206,7 @@ fun test_registry_status_indexing() {
         let mut task3 = task_manage::create_task(
             b"Task 3",
             b"Desc 3",
-            1000000,
+            option::some(1000000),
             priority_medium(),
             b"Cat3",
             vector::empty(),
@@ -2091,7 +2220,7 @@ fun test_registry_status_indexing() {
         let mut task4 = task_manage::create_task(
             b"Task 4",
             b"Desc 4",
-            1000000,
+            option::some(1000000),
             priority_medium(),
             b"Cat4",
             vector::empty(),

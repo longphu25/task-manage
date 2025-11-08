@@ -88,11 +88,11 @@ public struct Task has key, store {
     creator: address,
     title: String,
     description: String,
-    content_blob_id: String,
+    content_blob_id: Option<String>,
     file_blob_ids: vector<String>,
     created_at: u64,
     updated_at: u64,
-    due_date: u64,
+    due_date: Option<u64>,
     priority: u8,
     status: u8,
     category: String,
@@ -323,7 +323,7 @@ fun remove_from_registry(registry: &mut TaskRegistry, task_id: ID, status: u8) {
 public fun create_task(
     title: vector<u8>,
     description: vector<u8>,
-    due_date: u64,
+    due_date: Option<u64>,
     priority: u8,
     category: vector<u8>,
     tags: vector<vector<u8>>,
@@ -360,7 +360,7 @@ public fun create_task(
         creator: tx_context::sender(ctx),
         title: task_title,
         description: task_description,
-        content_blob_id: string::utf8(b""),
+        content_blob_id: option::none(),
         file_blob_ids: vector::empty(),
         created_at: current_time,
         updated_at: current_time,
@@ -430,7 +430,12 @@ public fun update_priority(task: &mut Task, priority: u8, clock: &Clock, ctx: &m
 }
 
 /// Update task due date
-public fun update_due_date(task: &mut Task, due_date: u64, clock: &Clock, ctx: &mut TxContext) {
+public fun update_due_date(
+    task: &mut Task,
+    due_date: Option<u64>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
     let sender = tx_context::sender(ctx);
     assert!(has_permission(task, sender, ROLE_EDITOR), EInsufficientPermission);
 
@@ -753,12 +758,13 @@ public fun add_content(
     let sender = tx_context::sender(ctx);
     assert!(has_permission(task, sender, ROLE_EDITOR), EInsufficientPermission);
 
-    task.content_blob_id = string::utf8(content_blob_id);
+    let blob_id_string = string::utf8(content_blob_id);
+    task.content_blob_id = option::some(blob_id_string);
     task.updated_at = clock::timestamp_ms(clock);
 
     event::emit(TaskContentUpdated {
         task_id: object::uid_to_address(&task.id),
-        content_blob_id: task.content_blob_id,
+        content_blob_id: blob_id_string,
     });
 }
 
@@ -1121,7 +1127,7 @@ public fun get_description(task: &Task): String {
     task.description
 }
 
-public fun get_content_blob_id(task: &Task): String {
+public fun get_content_blob_id(task: &Task): Option<String> {
     task.content_blob_id
 }
 
@@ -1137,7 +1143,7 @@ public fun get_updated_at(task: &Task): u64 {
     task.updated_at
 }
 
-public fun get_due_date(task: &Task): u64 {
+public fun get_due_date(task: &Task): Option<u64> {
     task.due_date
 }
 
@@ -1187,7 +1193,12 @@ public fun get_comments(task: &Task): vector<Comment> {
 
 /// Check if task is overdue
 public fun is_overdue(task: &Task, current_time: u64): bool {
-    task.due_date > 0 && current_time > task.due_date && task.status != STATUS_COMPLETED && task.status != STATUS_ARCHIVED
+    if (option::is_none(&task.due_date)) {
+        return false
+    };
+
+    let due_date_value = *option::borrow(&task.due_date);
+    current_time > due_date_value && task.status != STATUS_COMPLETED && task.status != STATUS_ARCHIVED
 }
 
 /// Check if user has access to task

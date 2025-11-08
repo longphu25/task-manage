@@ -111,7 +111,7 @@
 5. **Better validation**: Length limits, range checks
 6. **Comprehensive events**: Track all changes
 7. **Better code organization**: Clear sections, helper functions
-8. **Full test coverage**: 46+ unit tests
+8. **Full test coverage**: 48+ unit tests
 9. **SUI Reward System**: Integrated bounty/reward mechanism with deposits, assignee, approval, and refunds
 10. **On-Chain Querying**: Added TaskRegistry for efficient status-based queries
 
