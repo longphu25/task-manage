@@ -38,6 +38,7 @@ export interface TaskItem {
     status?: number;
     category?: string;
     tags?: string[];
+    assignee?: string;
 }
 
 export interface SharedTaskItem {

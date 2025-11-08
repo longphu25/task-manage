@@ -3,40 +3,40 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database } from "lucide-react";
 import { TaskCard } from "./task-card";
-import { SharedTaskItem } from "@/types";
-import { SharedTaskCard } from "./shared-task-card";
 import { TasksList } from "./tasks-list";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { SelectedTask } from "./selected-task";
 import { useTaskRegistry } from "@/hooks/use-task-registry";
-
-const mockSharedTasks: SharedTaskItem[] = [
-  {
-    id: "0x5",
-    title: "Review Q3 Financial Report",
-    description: "Review the quarterly financial report and provide feedback.",
-    creator: "0xabcde...fgh",
-    is_completed: false,
-    due_date: String(Math.floor(Date.now() / 1000) + 86400 * 5),
-    priority: "4",
-  },
-  {
-    id: "0x6",
-    title: "Team Brainstorming Session",
-    description: "Prepare agenda for the upcoming team brainstorming session.",
-    creator: "0x12345...678",
-    is_completed: true,
-    due_date: "0",
-    priority: "2",
-  },
-];
+import { useCurrentAccount } from "@mysten/dapp-kit";
 
 export const TaskManager = () => {
   const [selectedTask, setSelectedTask] = useState<string>();
   const taskRegistryId = process.env.NEXT_PUBLIC_TASKS_REGISTRY_ID;
+  const account = useCurrentAccount();
   
   // Use custom hook to fetch tasks from registry
   const { tasks, isLoading, isError } = useTaskRegistry(taskRegistryId);
+
+  // Filter tasks based on wallet address
+  const myTasks = useMemo(() => {
+    if (!account?.address) return [];
+    // Tasks created by the current wallet
+    return tasks.filter(task => task.creator === account.address);
+  }, [tasks, account]);
+
+  // Open tasks - show all tasks
+  const openTasks = useMemo(() => {
+    return tasks;
+  }, [tasks]);
+
+  // Shared tasks - tasks where wallet has access but is not the creator
+  // For now, using mock data until we implement dynamic field querying for access control
+  const sharedTasks = useMemo(() => {
+    if (!account?.address) return [];
+    // Tasks where the wallet has access but is not the creator
+    // This would require querying dynamic fields for AccessControl
+    return tasks.filter(task => task.creator !== account.address && task.assignee === account.address);
+  }, [tasks, account]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12">Loading tasks...</div>;
@@ -50,7 +50,10 @@ export const TaskManager = () => {
 
   return (
     <Tabs defaultValue="my-tasks" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-8">
+      <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsTrigger value="open-tasks" className="cursor-pointer">
+          Open Tasks
+        </TabsTrigger>
         <TabsTrigger value="my-tasks" className="cursor-pointer">
           My Tasks
         </TabsTrigger>
@@ -59,8 +62,8 @@ export const TaskManager = () => {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="my-tasks" className="space-y-4">
-        {tasks.length === 0 ? (
+      <TabsContent value="open-tasks" className="space-y-4">
+        {openTasks.length === 0 ? (
           <div className="text-center py-12 glass-card rounded-lg animate-fade-in">
             <Database className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
@@ -70,7 +73,25 @@ export const TaskManager = () => {
           </div>
         ) : (
           <TasksList>
-            {tasks.map((task) => (
+            {openTasks.map((task) => (
+              <TaskCard key={task.id} task={task} onSelect={setSelectedTask} />
+            ))}
+          </TasksList>
+        )}
+      </TabsContent>
+
+      <TabsContent value="my-tasks" className="space-y-4">
+        {myTasks.length === 0 ? (
+          <div className="text-center py-12 glass-card rounded-lg animate-fade-in">
+            <Database className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">No tasks created</h3>
+            <p className="text-muted-foreground">
+              You haven&apos;t created any tasks yet
+            </p>
+          </div>
+        ) : (
+          <TasksList>
+            {myTasks.map((task) => (
               <TaskCard key={task.id} task={task} onSelect={setSelectedTask} />
             ))}
           </TasksList>
@@ -78,18 +99,18 @@ export const TaskManager = () => {
       </TabsContent>
 
       <TabsContent value="shared-tasks" className="space-y-4">
-        {mockSharedTasks.length === 0 ? (
+        {sharedTasks.length === 0 ? (
           <div className="text-center py-12 glass-card rounded-lg animate-fade-in">
             <Database className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
+            <h3 className="text-lg font-medium mb-2">No shared tasks</h3>
             <p className="text-muted-foreground">
               No tasks have been shared with you yet.
             </p>
           </div>
         ) : (
           <TasksList>
-            {mockSharedTasks.map((task) => (
-              <SharedTaskCard
+            {sharedTasks.map((task) => (
+              <TaskCard
                 key={task.id}
                 task={task}
                 onSelect={setSelectedTask}

@@ -32,7 +32,7 @@ function RegisterEnokiWallets() {
         google: {
           clientId:
             "973280063155-rkuse0cisqcvvvnabpl56uov0pv3o2fj.apps.googleusercontent.com",
-          redirectUrl: window.location.origin,
+          redirectUrl: process.env.NEXT_PUBLIC_REDIRECT_URL || window.location.origin,
           extraParams: {
             prompt: "select_account",
           },

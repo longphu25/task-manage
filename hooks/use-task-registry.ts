@@ -26,6 +26,7 @@ const convertToTaskItem = (taskObject: SuiObjectResponse): TaskItem | null => {
     const dueDate = fields.due_date as { vec: string[] } | undefined;
     const createdAt = fields.created_at as string;
     const status = fields.status as number;
+    const assignee = fields.assignee as { vec: string[] } | undefined;
 
     console.log("Converting task:", { objectId, fields });
 
@@ -40,6 +41,7 @@ const convertToTaskItem = (taskObject: SuiObjectResponse): TaskItem | null => {
         ? new Date(parseInt(dueDate.vec[0])).toISOString()
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       priority: String(fields.priority || 1),
+      assignee: assignee?.vec?.[0] || undefined,
     };
   } catch (error) {
     console.error("Error converting task:", error, taskObject);
