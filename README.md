@@ -1,11 +1,32 @@
 # TaskOS - Product Requirements Document (PRD)
 
+[![Live Demo](https://img.shields.io/badge/Demo-Live-success?style=for-the-badge&logo=netlify)](https://task-os.netlify.app/)
+[![Sui Network](https://img.shields.io/badge/Sui-Testnet-blue?style=for-the-badge&logo=sui)](https://suiexplorer.com/)
+
 ## 🎯 Project Overview
 
 A decentralized task management system built on the Sui blockchain, featuring role-based access control, encrypted content storage via Walrus, and SUI token rewards. This project enables secure, collaborative task management with on-chain verification and incentivization mechanisms.
 
 ### Vision
+
 Create a transparent, secure, and incentive-driven task management platform that leverages blockchain technology to ensure accountability, privacy, and fair compensation.
+
+### 🚀 Live Deployment
+
+- **Website:** [https://task-os.netlify.app/](https://task-os.netlify.app/)
+- **Network:** Sui Testnet
+
+### 📝 Testnet Contract Addresses
+
+```bash
+NEXT_PUBLIC_PACKAGE_ID=0xd9a9971440976714e8b9fb6bc5f1aefbc9fca252612b1275c3e33d3c2774fec0
+NEXT_PUBLIC_TASKS_REGISTRY_ID=0xed26a9cf9f93ac8f017ecd9853a91de5238dc71fdcccb940ee8f5ee2b100c1c9
+NEXT_PUBLIC_VERSION_ID=0xd7f77b5da32186ae2f3fefaf55947702ea9338335eb7cf186135870affebe64b
+```
+
+**Explorer Links:**
+- [Package on Sui Explorer](https://suiexplorer.com/object/0xd9a9971440976714e8b9fb6bc5f1aefbc9fca252612b1275c3e33d3c2774fec0?network=testnet)
+- [Task Registry](https://suiexplorer.com/object/0xed26a9cf9f93ac8f017ecd9853a91de5238dc71fdcccb940ee8f5ee2b100c1c9?network=testnet)
 
 ---
 
@@ -373,35 +394,53 @@ pnpm test
 
 This project was built by:
 
-### Huỳnh Long Phú
-
-- **Telegram:** [@longphu](https://t.me/longphu)
-- **GitHub:** [longphu25](https://github.com/longphu25)
-- **Email:** <longphu257@gmail.com>
-
-### Nguyễn Tuấn Anh
-
-- **Telegram:** [@rongmauhong](https://t.me/rongmauhong)
-- **GitHub:** [teededung](https://github.com/teededung)
-- **Email:** <rongmauhong@protonmail.com>
-
-### Nguyễn Mạnh Việt Khôi
-
-- **Telegram:** [@Rocky2077](https://t.me/Rocky2077)
-- **GitHub:** [tpSpace](https://github.com/tpSpace)
-- **Email:** <nmvkhoi@gmail.com>
-
-### Trần Anh Tuấn
-
-- **Telegram:** [@tuanhqv123](https://t.me/tuanhqv123)
-- **GitHub:** [tuanhqv123](https://github.com/tuanhqv123)
-- **Email:** <tuantrungvuongk62@gmail.com>
-
-### Đặng Hoàng Lâm
-
-- **Telegram:** [@danghlam](https://t.me/danghlam)
-- **GitHub:** [lamdanghoang](https://github.com/lamdanghoang)
-- **Email:** <danghlambk14@gmail.com>
+<table>
+<tr>
+<td align="center">
+<a href="https://github.com/longphu25">
+<img src="https://github.com/longphu25.png" width="100px;" alt="Huỳnh Long Phú"/><br />
+<sub><b>Huỳnh Long Phú</b></sub>
+</a><br />
+<a href="https://t.me/longphu">💬 Telegram</a><br />
+<a href="mailto:longphu257@gmail.com">📧 Email</a>
+</td>
+<td align="center">
+<a href="https://github.com/teededung">
+<img src="https://github.com/teededung.png" width="100px;" alt="Nguyễn Tuấn Anh"/><br />
+<sub><b>Nguyễn Tuấn Anh</b></sub>
+</a><br />
+<a href="https://t.me/rongmauhong">💬 Telegram</a><br />
+<a href="mailto:rongmauhong@protonmail.com">📧 Email</a>
+</td>
+<td align="center">
+<a href="https://github.com/tpSpace">
+<img src="https://github.com/tpSpace.png" width="100px;" alt="Nguyễn Mạnh Việt Khôi"/><br />
+<sub><b>Nguyễn Mạnh Việt Khôi</b></sub>
+</a><br />
+<a href="https://t.me/Rocky2077">💬 Telegram</a><br />
+<a href="mailto:nmvkhoi@gmail.com">📧 Email</a>
+</td>
+</tr>
+<tr>
+<td align="center">
+<a href="https://github.com/tuanhqv123">
+<img src="https://github.com/tuanhqv123.png" width="100px;" alt="Trần Anh Tuấn"/><br />
+<sub><b>Trần Anh Tuấn</b></sub>
+</a><br />
+<a href="https://t.me/tuanhqv123">💬 Telegram</a><br />
+<a href="mailto:tuantrungvuongk62@gmail.com">📧 Email</a>
+</td>
+<td align="center">
+<a href="https://github.com/lamdanghoang">
+<img src="https://github.com/lamdanghoang.png" width="100px;" alt="Đặng Hoàng Lâm"/><br />
+<sub><b>Đặng Hoàng Lâm</b></sub>
+</a><br />
+<a href="https://t.me/danghlam">💬 Telegram</a><br />
+<a href="mailto:danghlambk14@gmail.com">📧 Email</a>
+</td>
+<td></td>
+</tr>
+</table>
 
 ---
 
