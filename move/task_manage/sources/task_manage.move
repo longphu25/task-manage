@@ -122,8 +122,8 @@ public struct TaskRegistry has key {
     tasks_by_status: Table<u8, vector<ID>>, // Key: status (u8), Value: list of Task IDs
 }
 
-/// Entry function to initialize and share the registry (call once after deploy)
-entry fun init_registry(ctx: &mut TxContext) {
+/// Initialize function - automatically runs when contract is published
+fun init(ctx: &mut TxContext) {
     let mut registry = TaskRegistry {
         id: object::new(ctx),
         tasks_by_status: table::new(ctx),
@@ -135,6 +135,12 @@ entry fun init_registry(ctx: &mut TxContext) {
     table::add(&mut registry.tasks_by_status, STATUS_ARCHIVED, vector::empty<ID>());
 
     transfer::share_object(registry);
+}
+
+/// Test-only function to initialize registry in test environment
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ctx);
 }
 
 // ==================== Events ====================

@@ -93,10 +93,10 @@ use task_manage::task_manage::{
     role_viewer,
     role_editor,
     role_owner,
-    init_registry,
+    init_for_testing as init_task_registry,
 };
 #[test_only]
-use task_manage::version::{Version, init_for_testing};
+use task_manage::version::{Version, init_for_testing as init_version};
 
 // Test addresses
 const CREATOR: address = @0xA;
@@ -145,8 +145,8 @@ fun test_create_task_success() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     ts::next_tx(&mut scenario, CREATOR);
@@ -196,8 +196,8 @@ fun test_update_task_info() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -240,8 +240,8 @@ fun test_update_priority() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -276,8 +276,8 @@ fun test_update_status() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -330,8 +330,8 @@ fun test_add_and_remove_tag() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -370,8 +370,8 @@ fun test_archive_task() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -408,8 +408,8 @@ fun test_delete_task() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -442,8 +442,8 @@ fun test_delete_task_not_owner() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -485,8 +485,8 @@ fun test_share_task_with_role() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -522,8 +522,8 @@ fun test_update_user_role() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -562,8 +562,8 @@ fun test_remove_user_access() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -601,8 +601,8 @@ fun test_creator_has_owner_role() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -632,8 +632,8 @@ fun test_non_owner_cannot_share() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -683,8 +683,8 @@ fun test_cannot_share_with_self() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -719,8 +719,8 @@ fun test_add_content() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -758,8 +758,8 @@ fun test_add_files() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -800,8 +800,8 @@ fun test_verify_access_creator() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -832,8 +832,8 @@ fun test_verify_access_shared_user() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -878,8 +878,8 @@ fun test_namespace_generation() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -910,8 +910,8 @@ fun test_add_comment() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -953,8 +953,8 @@ fun test_edit_comment() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1017,8 +1017,8 @@ fun test_delete_comment_by_author() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1061,8 +1061,8 @@ fun test_delete_comment_by_owner() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1135,8 +1135,8 @@ fun test_viewer_cannot_add_comment() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1186,8 +1186,8 @@ fun test_invalid_priority() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     ts::next_tx(&mut scenario, CREATOR);
@@ -1230,8 +1230,8 @@ fun test_invalid_status() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1267,8 +1267,8 @@ fun test_invalid_role() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1303,8 +1303,8 @@ fun test_is_overdue() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     ts::next_tx(&mut scenario, CREATOR);
@@ -1369,8 +1369,8 @@ fun test_task_with_no_due_date() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     ts::next_tx(&mut scenario, CREATOR);
@@ -1421,8 +1421,8 @@ fun test_task_content_blob_id_none_initially() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1452,8 +1452,8 @@ fun test_update_due_date_to_none() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1500,8 +1500,8 @@ fun test_deposit_reward_success() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1545,8 +1545,8 @@ fun test_deposit_reward_multiple_owners() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1620,8 +1620,8 @@ fun test_non_owner_cannot_deposit() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1672,8 +1672,8 @@ fun test_deposit_zero_amount_fails() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1708,8 +1708,8 @@ fun test_deposit_after_completed_fails() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1766,8 +1766,8 @@ fun test_set_assignee_success() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1807,8 +1807,8 @@ fun test_non_owner_cannot_set_assignee() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1857,8 +1857,8 @@ fun test_approve_completion_success() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -1945,8 +1945,8 @@ fun test_approve_completion_twice_fails() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2019,8 +2019,8 @@ fun test_approve_without_completed_fails() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2068,8 +2068,8 @@ fun test_approve_without_assignee_fails() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2126,8 +2126,8 @@ fun test_approve_without_reward_fails() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2184,8 +2184,8 @@ fun test_cancel_task_refunds() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2270,8 +2270,8 @@ fun test_archive_task_refunds() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2334,8 +2334,8 @@ fun test_delete_task_refunds() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2393,8 +2393,8 @@ fun test_non_owner_cannot_cancel() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
@@ -2443,8 +2443,8 @@ fun test_registry_status_indexing() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     // Create 4 tasks, all start as TODO
@@ -2592,8 +2592,8 @@ fun test_version_check_valid() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     // Create task with valid version - should succeed
@@ -2639,8 +2639,8 @@ fun test_version_check_on_all_operations() {
     ts::next_tx(&mut scenario, CREATOR);
     {
         let ctx = ts::ctx(&mut scenario);
-        init_for_testing(ctx);
-        init_registry(ctx);
+        init_version(ctx);
+        init_task_registry(ctx);
     };
 
     let _task_id = create_simple_task(&mut scenario, CREATOR);
