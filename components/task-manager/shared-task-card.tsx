@@ -20,36 +20,38 @@ export const SharedTaskCard = ({ task, onSelect }: SharedTaskCardProps) => {
             } cursor-pointer`}
             onClick={() => onSelect(task.id)}
         >
-            <CardContent className="flex justify-between items-center p-0">
-                <div className="flex flex-col gap-1">
+            <CardContent className="flex flex-col justify-between h-full p-0">
+                <div className="flex flex-col gap-1 grow">
                     <div className="flex items-center justify-between">
                         <p className="text-lg font-medium">{task.title}</p>
 
-                        <Badge
-                            className={`bg-${priorityInfo.color}-100 text-${priorityInfo.color}-800`}
-                        >
-                            {priorityInfo.label}
-                        </Badge>
-
-                        {overdueStatus && (
-                            <Badge className="bg-red-600 text-white">
-                                OVERDUE
+                        <div className="flex gap-2">
+                            <Badge
+                                className={`bg-${priorityInfo.color}-100 text-${priorityInfo.color}-800`}
+                            >
+                                {priorityInfo.label}
                             </Badge>
-                        )}
+
+                            {overdueStatus && (
+                                <Badge className="bg-red-600 text-white">
+                                    OVERDUE
+                                </Badge>
+                            )}
+                        </div>
                     </div>
 
                     <p className="text-sm text-gray-600">{task.description}</p>
                     <p className="text-xs text-gray-500">
                         Created by: {task.creator.slice(0, 10)}...
                     </p>
+                </div>
 
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                        <p>
-                            Status:{" "}
-                            {task.is_completed ? "Completed" : "In Progress"}
-                        </p>
-                        <p>Due: {formatDueDate(task.due_date)}</p>
-                    </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                    <p>
+                        Status:{" "}
+                        {task.is_completed ? "Completed" : "In Progress"}
+                    </p>
+                    <p>Due: {formatDueDate(task.due_date)}</p>
                 </div>
             </CardContent>
         </Card>

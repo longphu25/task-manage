@@ -13,6 +13,7 @@ import {
     IconHelp,
     IconInnerShadowTop,
     IconListDetails,
+    IconMail,
     IconReport,
     IconSearch,
     IconSettings,
@@ -33,6 +34,8 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { CustomBtn } from "./connect-button";
+import { Button } from "./ui/button";
+import { CreateTask } from "./task-manager/create-task";
 
 const data = {
     user: {
@@ -59,10 +62,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             asChild
                             className="data-[slot=sidebar-menu-button]:!p-1.5"
                         >
-                            <a href="#">
+                            <a href="/dashboard">
                                 <IconInnerShadowTop className="!size-5" />
-                                <span className="text-base font-semibold">
-                                    Acme Inc.
+                                <span className="text-xl font-semibold">
+                                    Task Manager
                                 </span>
                             </a>
                         </SidebarMenuButton>
@@ -70,6 +73,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
+                <div className="flex items-center">
+                    <div className="px-2 w-full h-8">
+                        <CreateTask onAddTask={() => {}} />
+                    </div>
+                    <Button
+                        size="icon"
+                        className="size-8 group-data-[collapsible=icon]:opacity-0"
+                        variant="outline"
+                    >
+                        <IconMail />
+                        <span className="sr-only">Inbox</span>
+                    </Button>
+                </div>
                 <NavMain items={data.navMain} />
             </SidebarContent>
             <SidebarFooter>
