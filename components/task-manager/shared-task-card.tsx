@@ -1,6 +1,5 @@
 import { SharedTaskItem } from "@/types";
 import { Card, CardContent } from "../ui/card";
-import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { formatDueDate, getPriorityLabel, isOverdue } from "@/helpers";
 
@@ -27,7 +26,12 @@ export const SharedTaskCard = ({ task, onSelect }: SharedTaskCardProps) => {
 
                         <div className="flex gap-2">
                             <Badge
-                                className={`bg-${priorityInfo.color}-100 text-${priorityInfo.color}-800`}
+                                className={`${
+                                    priorityInfo.color === 'red' ? 'bg-red-500' :
+                                    priorityInfo.color === 'orange' ? 'bg-orange-500' :
+                                    priorityInfo.color === 'blue' ? 'bg-blue-500' :
+                                    'bg-green-500'
+                                } text-white hover:opacity-90`}
                             >
                                 {priorityInfo.label}
                             </Badge>

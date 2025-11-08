@@ -173,7 +173,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <div className="px-2 w-full h-8">
-          <CreateTask onAddTask={() => {}} />
+          <CreateTask />
         </div>
         <NavMain items={data.navMain} />
         {/* <NavDocuments items={data.documents} />
