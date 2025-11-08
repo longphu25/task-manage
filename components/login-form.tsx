@@ -26,6 +26,7 @@ import {
 } from "@mysten/sui/keypairs/passkey";
 import { useWalletStorage } from "@/hooks/use-wallet-storage";
 import { useFaucet } from "@/hooks/use-faucet";
+import { useRouter } from "next/navigation";
 
 interface WalletConnectedSectionProps {
   currentAccount: WalletAccount;
@@ -88,6 +89,7 @@ function EnhancedLoginForm() {
   const { mutateAsync: signAndExecuteTransaction } =
     useSignAndExecuteTransaction();
   const faucet = useFaucet();
+  const router = useRouter();
   const [passkeyAccount, setPasskeyAccount] = useState<WalletAccount | null>(
     null
   );
@@ -104,6 +106,13 @@ function EnhancedLoginForm() {
       setPasskeyAccount(savedData.account as WalletAccount);
     }
   }, [loadWalletFromStorage]);
+
+  // Redirect to dashboard only when regular wallet is connected (not passkey)
+  useEffect(() => {
+    if (currentAccount) {
+      router.push("/dashboard");
+    }
+  }, [currentAccount, router]);
 
   // Track Enoki wallet connection changes and save to localStorage
   useEffect(() => {
